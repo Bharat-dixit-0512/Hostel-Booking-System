@@ -28,8 +28,8 @@ function App() {
     <div className="min-h-screen bg-[#101922] relative overflow-hidden">
       {/* Background Decor (Optional) */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute -top-[10%] -left-[5%] w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-blue-600/5 rounded-full blur-[100px]" />
+        <div className="absolute -top-[10%] -left-[5%] w-125 h-125bg-emerald-500/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-0 w-100 h-100 bg-blue-600/5 rounded-full blur-[100px]" />
       </div>
 
       <div className="relative z-10 min-h-screen">
