@@ -1,121 +1,81 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React from 'react';
+import { Route, Routes } from 'react-router-dom';
+import { Toaster } from "react-hot-toast";
+
+// --- AUTH PAGES ---
+import LoginPage from './pages/LoginPage';
+
+// --- ADMIN PAGES ---
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminProfile from './pages/AdminProfile';
+import ManualBookingPage from './pages/ManualBookingPage';
+import ApplicationRegistryPage from './pages/ApplicationRegistryPage';
+import ConfirmedBookingsPage from './pages/ConfirmedBookingsPage';
+import InventoryConfigPage from './pages/InventoryConfig.jsx'; // Screenshot ke mutabiq
+import FCFSAnalytics from './pages/FCFSAnalytics';
+
+// --- STUDENT PAGES ---
+import StudentDashboardPage from './pages/StudentDashboardPage';
+import StudentProfile from './pages/StudentProfile';
+import BookingCountdownPage from './pages/BookingCountdownPage';
+import RoomSwapDashboard from './pages/RoomSwapDashboard';
+import AdminSwapApprovalPage from './pages/SwapApprovalPage.jsx';
+import PaymentPage from './pages/PaymentPage.jsx';
+import BrowseHostelsPage from './pages/BrowseHostelsPage.jsx';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="min-h-screen bg-[#101922] relative overflow-hidden">
+      {/* Background Decor (Optional) */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute -top-[10%] -left-[5%] w-125 h-125bg-emerald-500/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-0 w-100 h-100 bg-blue-600/5 rounded-full blur-[100px]" />
+      </div>
 
-      <div className="ticks"></div>
+      <div className="relative z-10 min-h-screen">
+        <Routes>
+          {/* Public / Auth Routes */}
+          <Route path="/" element={<LoginPage />} />
+          <Route path="/login" element={<LoginPage />} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+          {/* --- ADMIN ROUTES --- */}
+          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+          <Route path="/admin/profile" element={<AdminProfile />} />
+          <Route path="/admin/manual-booking" element={<ManualBookingPage />} />
+          <Route path="/admin/application-registry" element={<ApplicationRegistryPage />} />
+          <Route path="/admin/manage-hostels" element={<InventoryConfigPage />} />
+          <Route path="/admin/confirmed-bookings" element={<ConfirmedBookingsPage />} />
+          <Route path="/admin/fcfs-analytics" element={<FCFSAnalytics />} />
+          <Route path="/admin/swap-approvals" element={<AdminSwapApprovalPage />} />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+          {/* --- STUDENT ROUTES --- */}
+          <Route path="/student/dashboard" element={<StudentDashboardPage />} />
+          <Route path="/student/profile" element={<StudentProfile />} />
+          
+          {/* FCFS Logic Specific Student Routes */}
+          <Route path="/student/booking-countdown" element={<BookingCountdownPage />} />
+          <Route path="/student/room-swap" element={<RoomSwapDashboard />} />
+
+          <Route path="/student/booking" element={<BrowseHostelsPage />} />
+          <Route path="/student/payment" element={<PaymentPage />} />
+          
+        </Routes>
+        
+        <Toaster 
+          position="top-center"
+          reverseOrder={false}
+          toastOptions={{
+            style: {
+              background: '#15202b',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '16px',
+            },
+          }}
+        />
+      </div>
+    </div>
+  );
 }
 
-export default App
+export default App;
