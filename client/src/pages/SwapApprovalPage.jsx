@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
-import { ArrowRightLeft, CheckCircle2, XCircle, ShieldAlert, Search, Info, History } from 'lucide-react';
-import toast, { Toaster } from 'react-hot-toast';
-import AdminNavbar from '../components/AdminNavbar';
+// Removed due to missing backend support
+// import React, { useState } from 'react';
+// import { ArrowRightLeft, CheckCircle2, XCircle, ShieldAlert, Search, Info, History } from 'lucide-react';
+// import toast, { Toaster } from 'react-hot-toast';
+// import AdminNavbar from '../components/AdminNavbar';
 
 const AdminSwapApprovalPage = () => {
+  return <div>Room swap approval feature is not available.</div>;
+}
   const [requests, setRequests] = useState([
     { 
       id: "SWP-9901", 
@@ -149,6 +152,6 @@ const AdminSwapApprovalPage = () => {
       </main>
     </div>
   );
-};
+}
 
 export default AdminSwapApprovalPage;

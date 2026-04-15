@@ -1,5 +1,11 @@
-import { MAX_ROOM_CAPACITY } from "../constants.js";
-import { getHostelModel, getRoomModel } from "../db/index.js";
+import { ACTIVE_BOOKING_STATUSES, MAX_ROOM_CAPACITY } from "../constants.js";
+import {
+    getBookingModel,
+    getHostelModel,
+    getHostelStudentModel,
+    getRoomModel,
+    startHostelSession,
+} from "../db/index.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
@@ -7,6 +13,7 @@ import {
     applyRoomImportPreview,
     processRoomImportPreview,
 } from "../utils/roomImport.utils.js";
+import { releaseExpiredPendingBookings } from "../utils/booking.utils.js";
 
 const parseHostelId = (hostelId) => {
     const parsedHostelId = Number(hostelId);
@@ -62,6 +69,39 @@ const ensureHostelExists = async (hostelId) => {
     }
 
     return hostel;
+};
+
+const getRoomDeletionBlocker = async ({ hostelId, room, session }) => {
+    const Booking = getBookingModel();
+    const HostelStudent = getHostelStudentModel();
+
+    if (room.available_beds < room.capacity) {
+        return "Room cannot be deleted because it has at least one booked bed";
+    }
+
+    const activeBooking = await Booking.findOne({
+        hostel_id: hostelId,
+        room_number: room.room_number,
+        status: {
+            $in: ACTIVE_BOOKING_STATUSES,
+        },
+    }).session(session);
+
+    if (activeBooking) {
+        return "Room cannot be deleted because it has an active booking";
+    }
+
+    const allocatedStudent = await HostelStudent.findOne({
+        hostel_id: hostelId,
+        room_number: room.room_number,
+        room_allocated: true,
+    }).session(session);
+
+    if (allocatedStudent) {
+        return "Room cannot be deleted because it is allocated to a student";
+    }
+
+    return null;
 };
 
 const getUploadedExcelBuffer = (req) => {
@@ -190,6 +230,60 @@ export const updateRoom = asyncHandler(async (req, res) => {
             "Room updated successfully"
         )
     );
+});
+
+export const deleteRoom = asyncHandler(async (req, res) => {
+    const hostelId = parseHostelId(req.params.hostelId);
+    const roomNumber = String(req.params.roomNumber ?? "").trim();
+    const Room = getRoomModel();
+    const session = await startHostelSession();
+
+    if (!roomNumber) {
+        throw new ApiError(400, "room_number is required");
+    }
+
+    try {
+        session.startTransaction();
+        await releaseExpiredPendingBookings(session);
+
+        const room = await Room.findOne({
+            hostel_id: hostelId,
+            room_number: roomNumber,
+        }).session(session);
+
+        if (!room) {
+            throw new ApiError(404, "Room not found");
+        }
+
+        const deletionBlocker = await getRoomDeletionBlocker({
+            hostelId,
+            room,
+            session,
+        });
+
+        if (deletionBlocker) {
+            throw new ApiError(409, deletionBlocker);
+        }
+
+        await room.deleteOne({ session });
+        await session.commitTransaction();
+
+        res.status(200).json(
+            new ApiResponse(
+                200,
+                {
+                    hostel_id: hostelId,
+                    room_number: roomNumber,
+                },
+                "Room deleted successfully"
+            )
+        );
+    } catch (error) {
+        await session.abortTransaction();
+        throw error;
+    } finally {
+        await session.endSession();
+    }
 });
 
 export const previewRoomImport = asyncHandler(async (req, res) => {

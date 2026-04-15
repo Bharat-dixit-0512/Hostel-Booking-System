@@ -3,6 +3,7 @@ import multer from "multer";
 
 import {
     createHostel,
+    deleteHostel,
     createOfflineBookingController,
     listEligibleStudents,
     listBookings,
@@ -15,6 +16,7 @@ import {
 } from "../controllers/admin.controller.js";
 import {
     createRoom,
+    deleteRoom,
     confirmRoomImport,
     getRoomsByHostel,
     previewRoomImport,
@@ -51,6 +53,11 @@ router.put(
     authorizeAdminRoles(ADMIN_ROLES.MAINADMIN),
     updateHostel
 );
+router.delete(
+    "/hostels/:hostelId",
+    authorizeAdminRoles(ADMIN_ROLES.MAINADMIN),
+    deleteHostel
+);
 router.put(
     "/hostels/:hostelId/allowed-years",
     authorizeAdminRoles(ADMIN_ROLES.MAINADMIN),
@@ -65,6 +72,11 @@ router.put(
     "/hostels/:hostelId/rooms/:roomNumber",
     authorizeAdminRoles(ADMIN_ROLES.MAINADMIN),
     updateRoom
+);
+router.delete(
+    "/hostels/:hostelId/rooms/:roomNumber",
+    authorizeAdminRoles(ADMIN_ROLES.MAINADMIN),
+    deleteRoom
 );
 router.post(
     "/hostels/:hostelId/rooms/import/preview",

@@ -1,4 +1,5 @@
 import {
+    ACTIVE_BOOKING_STATUSES,
     BOOKING_WINDOW_KEY,
     GENDERS,
     RESIDENCE_TYPES,
@@ -63,6 +64,49 @@ const ensureHostelExists = async (hostelId) => {
     }
 
     return hostel;
+};
+
+const getHostelDeletionBlocker = async (hostelId, session) => {
+    const Room = getRoomModel();
+    const Booking = getBookingModel();
+    const HostelStudent = getHostelStudentModel();
+
+    const occupiedRoom = await Room.findOne({
+        hostel_id: hostelId,
+        $expr: {
+            $lt: ["$available_beds", "$capacity"],
+        },
+    }).session(session);
+
+    if (occupiedRoom) {
+        return `Hostel cannot be deleted because room ${occupiedRoom.room_number} has at least one booked bed`;
+    }
+
+    const activeBooking = await Booking.findOne({
+        hostel_id: hostelId,
+        status: {
+            $in: ACTIVE_BOOKING_STATUSES,
+        },
+    })
+        .select("room_number -_id")
+        .session(session);
+
+    if (activeBooking) {
+        return `Hostel cannot be deleted because room ${activeBooking.room_number} has an active booking`;
+    }
+
+    const allocatedStudent = await HostelStudent.findOne({
+        hostel_id: hostelId,
+        room_allocated: true,
+    })
+        .select("room_number -_id")
+        .session(session);
+
+    if (allocatedStudent) {
+        return `Hostel cannot be deleted because room ${allocatedStudent.room_number} is allocated`;
+    }
+
+    return null;
 };
 
 const getDuplicateKeyFields = (error) => {
@@ -308,6 +352,61 @@ export const updateHostel = asyncHandler(async (req, res) => {
             "Hostel updated successfully"
         )
     );
+});
+
+export const deleteHostel = asyncHandler(async (req, res) => {
+    const hostelId = parseHostelId(req.params.hostelId);
+    const Hostel = getHostelModel();
+    const HostelAllowedYear = getHostelAllowedYearModel();
+    const Room = getRoomModel();
+    const session = await startHostelSession();
+
+    try {
+        session.startTransaction();
+        await releaseExpiredPendingBookings(session);
+
+        const hostel = await Hostel.findOne({
+            hostel_id: hostelId,
+        }).session(session);
+
+        if (!hostel) {
+            throw new ApiError(404, "Hostel not found");
+        }
+
+        const deletionBlocker = await getHostelDeletionBlocker(hostelId, session);
+
+        if (deletionBlocker) {
+            throw new ApiError(409, deletionBlocker);
+        }
+
+        const roomDeleteResult = await Room.deleteMany({
+            hostel_id: hostelId,
+        }).session(session);
+        const allowedYearDeleteResult = await HostelAllowedYear.deleteMany({
+            hostel_id: hostelId,
+        }).session(session);
+
+        await hostel.deleteOne({ session });
+        await session.commitTransaction();
+
+        res.status(200).json(
+            new ApiResponse(
+                200,
+                {
+                    hostel_id: hostelId,
+                    hostel_name: hostel.hostel_name,
+                    deleted_rooms: roomDeleteResult.deletedCount ?? 0,
+                    deleted_allowed_years: allowedYearDeleteResult.deletedCount ?? 0,
+                },
+                "Hostel deleted successfully"
+            )
+        );
+    } catch (error) {
+        await session.abortTransaction();
+        throw error;
+    } finally {
+        await session.endSession();
+    }
 });
 
 export const replaceAllowedYears = asyncHandler(async (req, res) => {

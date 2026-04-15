@@ -1,9 +1,12 @@
-import React from 'react';
-import StudentNavbar from '../components/StudentNavbar';
-import { Repeat, Search, Send, Info, ArrowRightLeft } from 'lucide-react';
-import toast from 'react-hot-toast';
+// Removed due to missing backend support
+// import React from 'react';
+// import StudentNavbar from '../components/StudentNavbar';
+// import { Repeat, Search, Send, Info, ArrowRightLeft } from 'lucide-react';
+// import toast from 'react-hot-toast';
 
 const RoomSwapDashboard = () => {
+  return <div>Room swap feature is not available.</div>;
+}
     return (
         <div className="min-h-screen bg-[#101922] text-slate-200 font-sans selection:bg-[#137fec]/30">
             <StudentNavbar />
@@ -74,6 +77,6 @@ const RoomSwapDashboard = () => {
             </main>
         </div>
     );
-};
+}
 
 export default RoomSwapDashboard;
