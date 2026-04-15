@@ -1,22 +1,29 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "description": "",
-  "main": "server.js",
+  "description": "Hostel Booking System backend",
+  "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "seed:auth": "node src/scripts/seedAuthDb.js",
+    "seed:auth:admins": "node src/scripts/seedAdmins.js",
+    "seed:auth:students": "node src/scripts/seedStudents.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.0",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.4.1"
+    "mongoose": "^9.4.1",
+    "multer": "^2.0.2",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
