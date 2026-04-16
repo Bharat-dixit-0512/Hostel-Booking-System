@@ -305,7 +305,9 @@ export const listHostels = asyncHandler(async (_req, res) => {
         },
       },
     ]),
-    HostelRoomPricing.find().sort({ hostel_id: 1, capacity: 1, ac_type: -1 }).lean(),
+    HostelRoomPricing.find()
+      .sort({ hostel_id: 1, capacity: 1, ac_type: -1 })
+      .lean(),
   ]);
 
   const allowedYearMap = new Map();

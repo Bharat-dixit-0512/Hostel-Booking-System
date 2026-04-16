@@ -33,7 +33,8 @@ const formatDateTime = (value) =>
 
 const formatDate = (value) =>
   value ? new Date(value).toLocaleDateString() : "N/A";
-const formatCurrency = (value) => `Rs. ${Number(value ?? 0).toLocaleString("en-IN")}`;
+const formatCurrency = (value) =>
+  `Rs. ${Number(value ?? 0).toLocaleString("en-IN")}`;
 
 function BookingHistoryPage() {
   const [bookings, setBookings] = useState([]);

@@ -17,7 +17,8 @@ import axiosInstance from "../lib/axios";
 import { getErrorMessage } from "../lib/errors";
 
 const ACTIVE_BOOKING_STATUSES = new Set(["PENDING", "CONFIRMED"]);
-const formatCurrency = (value) => `Rs. ${Number(value ?? 0).toLocaleString("en-IN")}`;
+const formatCurrency = (value) =>
+  `Rs. ${Number(value ?? 0).toLocaleString("en-IN")}`;
 
 const HostelSummaryCard = ({ hostel, onSelect }) => (
   <button
@@ -129,7 +130,9 @@ const RoomCard = ({ room, isSelected, onSelect }) => (
         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
           Price
         </p>
-        <p className="text-white font-bold mt-1">{formatCurrency(room.price)}</p>
+        <p className="text-white font-bold mt-1">
+          {formatCurrency(room.price)}
+        </p>
       </div>
     </div>
   </button>
@@ -277,7 +280,10 @@ function BrowseHostelsPage() {
                 </span>
               </p>
               <p className="text-sm text-slate-400 mt-1">
-                Amount: <span className="text-white font-bold">{formatCurrency(activeBooking.price)}</span>
+                Amount:{" "}
+                <span className="text-white font-bold">
+                  {formatCurrency(activeBooking.price)}
+                </span>
               </p>
             </div>
             <button
@@ -438,7 +444,9 @@ function BrowseHostelsPage() {
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-slate-500 font-medium">Price</span>
                       <span className="font-bold text-slate-300">
-                        {selectedRoom ? formatCurrency(selectedRoom.price) : "--"}
+                        {selectedRoom
+                          ? formatCurrency(selectedRoom.price)
+                          : "--"}
                       </span>
                     </div>
                   </div>

@@ -16,8 +16,10 @@ import axiosInstance from "../lib/axios";
 import { getErrorMessage } from "../lib/errors";
 
 const getHostelName = (hostels, hostelId) =>
-  hostels.find((hostel) => hostel.hostel_id === hostelId)?.hostel_name || `Hostel #${hostelId}`;
-const formatCurrency = (value) => `Rs. ${Number(value ?? 0).toLocaleString("en-IN")}`;
+  hostels.find((hostel) => hostel.hostel_id === hostelId)?.hostel_name ||
+  `Hostel #${hostelId}`;
+const formatCurrency = (value) =>
+  `Rs. ${Number(value ?? 0).toLocaleString("en-IN")}`;
 
 function PaymentPage() {
   const navigate = useNavigate();
@@ -58,9 +60,12 @@ function PaymentPage() {
         setHostels(hostelsResponse.data?.data?.hostels || []);
 
         if (resolvedBooking?.status === "PENDING") {
-          const sessionResponse = await axiosInstance.post("/payments/create-session", {
-            booking_id: resolvedBooking._id,
-          });
+          const sessionResponse = await axiosInstance.post(
+            "/payments/create-session",
+            {
+              booking_id: resolvedBooking._id,
+            },
+          );
 
           if (!isMounted) {
             return;
@@ -108,7 +113,9 @@ function PaymentPage() {
       await refreshUser();
       toast.success("Booking confirmed successfully", { id: toastId });
     } catch (error) {
-      toast.error(getErrorMessage(error, "Unable to confirm payment"), { id: toastId });
+      toast.error(getErrorMessage(error, "Unable to confirm payment"), {
+        id: toastId,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -127,13 +134,17 @@ function PaymentPage() {
       toast.success("Booking hold cancelled", { id: toastId });
       navigate("/student/booking", { replace: true });
     } catch (error) {
-      toast.error(getErrorMessage(error, "Unable to cancel booking"), { id: toastId });
+      toast.error(getErrorMessage(error, "Unable to cancel booking"), {
+        id: toastId,
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const hostelName = booking ? getHostelName(hostels, booking.hostel_id) : "No active booking";
+  const hostelName = booking
+    ? getHostelName(hostels, booking.hostel_id)
+    : "No active booking";
 
   if (isLoading) {
     return (
@@ -153,9 +164,12 @@ function PaymentPage() {
         <main className="max-w-4xl mx-auto pt-32 px-6 pb-20">
           <div className="bg-[#15202b]/40 border border-white/5 rounded-[40px] p-10 text-center space-y-5">
             <XCircle size={40} className="mx-auto text-red-500" />
-            <h1 className="text-2xl font-black text-white">No active booking found</h1>
+            <h1 className="text-2xl font-black text-white">
+              No active booking found
+            </h1>
             <p className="text-slate-400 text-sm">
-              Start a booking from the hostel browser before opening the payment page.
+              Start a booking from the hostel browser before opening the payment
+              page.
             </p>
             <button
               type="button"
@@ -177,10 +191,13 @@ function PaymentPage() {
           <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto text-emerald-500">
             <CheckCircle2 size={40} />
           </div>
-          <h2 className="text-3xl font-black text-white italic">Booking Confirmed</h2>
+          <h2 className="text-3xl font-black text-white italic">
+            Booking Confirmed
+          </h2>
           <p className="text-slate-500 text-sm leading-relaxed">
-            Your room in <span className="text-white font-bold">{hostelName}</span> has
-            been officially allocated.
+            Your room in{" "}
+            <span className="text-white font-bold">{hostelName}</span> has been
+            officially allocated.
           </p>
           <div className="bg-black/20 border border-white/5 rounded-3xl p-5 text-left space-y-2">
             <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
@@ -191,7 +208,9 @@ function PaymentPage() {
             <p className="text-xs text-slate-400">
               Payment Ref: {booking.payment_reference || "Not provided"}
             </p>
-            <p className="text-xs text-slate-400">Amount: {formatCurrency(booking.price)}</p>
+            <p className="text-xs text-slate-400">
+              Amount: {formatCurrency(booking.price)}
+            </p>
           </div>
           <div className="pt-6 flex flex-col gap-3">
             <button
@@ -221,10 +240,12 @@ function PaymentPage() {
       <main className="max-w-4xl mx-auto pt-32 px-6 pb-20 grid grid-cols-1 lg:grid-cols-12 gap-10">
         <div className="lg:col-span-7 space-y-8">
           <header>
-            <h1 className="text-3xl font-black text-white italic">Payment Confirmation</h1>
+            <h1 className="text-3xl font-black text-white italic">
+              Payment Confirmation
+            </h1>
             <p className="text-slate-500 text-xs font-black uppercase tracking-widest mt-2 flex items-center gap-2">
-              <Lock size={12} className="text-emerald-500" /> Backend placeholder gateway
-              session
+              <Lock size={12} className="text-emerald-500" /> Backend
+              placeholder gateway session
             </p>
           </header>
 
@@ -232,11 +253,15 @@ function PaymentPage() {
             <div className="flex gap-4">
               <div className="flex-1 p-4 bg-[#137fec]/10 border border-[#137fec]/20 rounded-2xl flex items-center gap-3">
                 <CreditCard className="text-[#137fec]" />
-                <span className="text-xs font-bold text-white">Confirm Held Booking</span>
+                <span className="text-xs font-bold text-white">
+                  Confirm Held Booking
+                </span>
               </div>
               <div className="flex-1 p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3">
                 <ShieldCheck className="text-slate-400" />
-                <span className="text-xs font-bold text-slate-300">Session {sessionData?.session_id}</span>
+                <span className="text-xs font-bold text-slate-300">
+                  Session {sessionData?.session_id}
+                </span>
               </div>
             </div>
 
@@ -246,8 +271,9 @@ function PaymentPage() {
                   Gateway Notes
                 </p>
                 <p className="text-sm text-slate-300">
-                  The current backend exposes a placeholder payment gateway. Confirming this
-                  step will finalize the room allocation in the server.
+                  The current backend exposes a placeholder payment gateway.
+                  Confirming this step will finalize the room allocation in the
+                  server.
                 </p>
               </div>
 
@@ -266,7 +292,9 @@ function PaymentPage() {
                 disabled={isSubmitting}
                 className="flex-1 py-5 bg-[#137fec] hover:bg-blue-600 text-white font-black text-xs uppercase tracking-widest rounded-3xl transition-all shadow-xl shadow-[#137fec]/20 flex items-center justify-center gap-3 cursor-pointer disabled:bg-slate-700"
               >
-                {isSubmitting ? "Processing..." : "Confirm Payment & Allocate Room"}
+                {isSubmitting
+                  ? "Processing..."
+                  : "Confirm Payment & Allocate Room"}
               </button>
               <button
                 type="button"
@@ -285,16 +313,22 @@ function PaymentPage() {
             <h3 className="text-lg font-bold text-white">Booking Summary</h3>
             <div className="space-y-4">
               <div className="flex justify-between text-xs">
-                <span className="text-slate-500 font-medium">Selected Hostel</span>
+                <span className="text-slate-500 font-medium">
+                  Selected Hostel
+                </span>
                 <span className="text-white font-bold">{hostelName}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-slate-500 font-medium">Room</span>
-                <span className="text-white font-bold">{booking.room_number}</span>
+                <span className="text-white font-bold">
+                  {booking.room_number}
+                </span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-slate-500 font-medium">Status</span>
-                <span className="text-orange-400 font-bold">{booking.status}</span>
+                <span className="text-orange-400 font-bold">
+                  {booking.status}
+                </span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-slate-500 font-medium">Amount</span>
@@ -314,7 +348,9 @@ function PaymentPage() {
                 <span className="text-[10px] font-black uppercase text-[#137fec]">
                   Session ID
                 </span>
-                <span className="text-sm font-black text-white">{sessionData?.session_id}</span>
+                <span className="text-sm font-black text-white">
+                  {sessionData?.session_id}
+                </span>
               </div>
             </div>
           </div>

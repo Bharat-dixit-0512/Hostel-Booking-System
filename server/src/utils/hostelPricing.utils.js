@@ -1,7 +1,8 @@
 import { MAX_ROOM_CAPACITY } from "../constants.js";
 import { getHostelRoomPricingModel } from "../db/index.js";
 
-const withSession = (query, session) => (session ? query.session(session) : query);
+const withSession = (query, session) =>
+  session ? query.session(session) : query;
 
 export const getPricingCategoryKey = ({ capacity, acType }) =>
   `${capacity}bed_${acType ? "ac" : "non_ac"}`;

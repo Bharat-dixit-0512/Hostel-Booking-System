@@ -50,6 +50,10 @@ hostelRoomPricingSchema.index(
 
 const registerHostelRoomPricingModel = (connection) =>
   connection.models.HostelRoomPricing ||
-  connection.model("HostelRoomPricing", hostelRoomPricingSchema, "hostel_room_pricing");
+  connection.model(
+    "HostelRoomPricing",
+    hostelRoomPricingSchema,
+    "hostel_room_pricing",
+  );
 
 export default registerHostelRoomPricingModel;

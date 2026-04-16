@@ -703,13 +703,15 @@ function InventoryConfigPage() {
                               Room Category Pricing
                             </h4>
                             <p className="text-xs text-slate-500 mt-1">
-                              Set fee for each room category ({hostel.hostel_name}).
+                              Set fee for each room category (
+                              {hostel.hostel_name}).
                             </p>
                           </div>
                           <button
                             type="button"
                             disabled={
-                              !canManage || pricingSavingHostelId === hostel.hostel_id
+                              !canManage ||
+                              pricingSavingHostelId === hostel.hostel_id
                             }
                             onClick={() => handleSaveHostelPricing(hostel)}
                             className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed"
@@ -720,33 +722,39 @@ function InventoryConfigPage() {
                           </button>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {getNormalizedPricing(hostel.pricing || []).map((category) => (
-                            <div
-                              key={`${category.capacity}_${category.ac_type}`}
-                              className="rounded-2xl border border-white/10 bg-black/30 p-4 space-y-2"
-                            >
-                              <p className="text-xs font-bold text-white">{category.label}</p>
-                              <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/40 px-3 py-2">
-                                <span className="text-xs font-bold text-slate-400">Rs.</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  disabled={!canManage}
-                                  value={category.price}
-                                  onChange={(event) =>
-                                    handlePricingInputChange(
-                                      hostel.hostel_id,
-                                      category.capacity,
-                                      category.ac_type,
-                                      event.target.value,
-                                    )
-                                  }
-                                  className="w-full bg-transparent text-sm text-white focus:outline-none disabled:text-slate-500"
-                                />
+                          {getNormalizedPricing(hostel.pricing || []).map(
+                            (category) => (
+                              <div
+                                key={`${category.capacity}_${category.ac_type}`}
+                                className="rounded-2xl border border-white/10 bg-black/30 p-4 space-y-2"
+                              >
+                                <p className="text-xs font-bold text-white">
+                                  {category.label}
+                                </p>
+                                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/40 px-3 py-2">
+                                  <span className="text-xs font-bold text-slate-400">
+                                    Rs.
+                                  </span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    disabled={!canManage}
+                                    value={category.price}
+                                    onChange={(event) =>
+                                      handlePricingInputChange(
+                                        hostel.hostel_id,
+                                        category.capacity,
+                                        category.ac_type,
+                                        event.target.value,
+                                      )
+                                    }
+                                    className="w-full bg-transparent text-sm text-white focus:outline-none disabled:text-slate-500"
+                                  />
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ),
+                          )}
                         </div>
                       </div>
 
