@@ -1,50 +1,59 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { useLocation, useNavigate } from "react-router-dom";
+
+import { useAuth } from "../hooks/useAuth";
+import { getErrorMessage } from "../lib/errors";
+
+const getDefaultRoute = (loginType) =>
+  loginType === "admin" ? "/admin/dashboard" : "/student/dashboard";
 
 function LoginPage() {
   const navigate = useNavigate();
-
-  // State Management
+  const location = useLocation();
+  const { login, isAuthActionPending } = useAuth();
   const [isStudent, setIsStudent] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
 
-  // Handle Input Changes
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+
+    setFormData((currentFormData) => ({
+      ...currentFormData,
+      [name]: value,
+    }));
   };
 
-  // Handle Form Submission
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
-    // Start loading toast
     const toastId = toast.loading("Authenticating...");
 
+    try {
+      const loginType = isStudent ? "student" : "admin";
+      const user = await login({
+        email: formData.email.trim(),
+        password: formData.password,
+        loginType,
+      });
+      const fallbackRoute = getDefaultRoute(user?.login_type);
+      const requestedPath = location.state?.from?.pathname;
+      const nextPath =
+        requestedPath &&
+        ((user?.login_type === "student" && requestedPath.startsWith("/student/")) ||
+          (user?.login_type === "admin" && requestedPath.startsWith("/admin/")))
+          ? requestedPath
+          : fallbackRoute;
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-
-      
-      if (formData.password === "student123" && isStudent) {
-        toast.success(`🎓Welcome back, Student !`, { id: toastId });
-        navigate('/student/dashboard');
-      } else if (formData.password === "admin123" && !isStudent) {
-        toast.success(`👺Welcome back, Admin !`, { id: toastId });
-        navigate('/admin/dashboard');
-      } else {
-        toast.error("Invalid credentials. Use 'password123' for demo.", {
-          id: toastId,
-        });
-      }
-    }, 1500);
+      toast.success(`Welcome back, ${user?.name || "User"}`, { id: toastId });
+      navigate(nextPath, { replace: true });
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to sign in"), { id: toastId });
+    }
   };
 
   return (
@@ -59,6 +68,7 @@ function LoginPage() {
         <div className="absolute -top-[20%] -left-[10%] w-96 h-96 bg-[#137fec]/20 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-[10%] right-[10%] w-72 h-72 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none" />
       </div>
+
       <main className="relative z-10 grow flex items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-md animate-[fadeIn_0.5s_ease-out]">
           <div className="text-center mb-8">
@@ -85,6 +95,7 @@ function LoginPage() {
               Hostel Allocation Portal
             </p>
           </div>
+
           <div
             className="rounded-xl shadow-2xl p-8 transition-all duration-300 backdrop-blur-md"
             style={{
@@ -99,29 +110,37 @@ function LoginPage() {
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
                 </span>
                 <span className="text-xs font-medium text-emerald-400">
-                  System Online
+                  Live Backend Auth
                 </span>
               </div>
-              <span className="text-xs text-slate-500 font-mono">
-                Backend Connected
-              </span>
+              <span className="text-xs text-slate-500 font-mono">Session Cookies Enabled</span>
             </div>
+
             <div className="bg-[#101922]/50 p-1 rounded-lg flex mb-8 border border-white/5 relative">
               <button
                 type="button"
                 onClick={() => setIsStudent(true)}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${isStudent ? "bg-[#137fec] text-white shadow-lg shadow-[#137fec]/25" : "text-slate-400 hover:text-white hover:bg-white/5"}`}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
+                  isStudent
+                    ? "bg-[#137fec] text-white shadow-lg shadow-[#137fec]/25"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                }`}
               >
                 Student
               </button>
               <button
                 type="button"
                 onClick={() => setIsStudent(false)}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${!isStudent ? "bg-[#137fec] text-white shadow-lg shadow-[#137fec]/25" : "text-slate-400 hover:text-white hover:bg-white/5"}`}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
+                  !isStudent
+                    ? "bg-[#137fec] text-white shadow-lg shadow-[#137fec]/25"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                }`}
               >
                 Admin
               </button>
             </div>
+
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-1.5">
                 <label
@@ -137,11 +156,12 @@ function LoginPage() {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  disabled={isSubmitting}
-                  placeholder={isStudent ? "roll@gla.ac.in" : "admin@gla.ac.in"}
+                  disabled={isAuthActionPending}
+                  placeholder={isStudent ? "student@gla.ac.in" : "admin@gla.ac.in"}
                   className="block w-full px-4 py-2.5 bg-[#101922]/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-[#137fec] focus:ring-1 focus:ring-[#137fec] sm:text-sm transition-all shadow-inner"
                 />
               </div>
+
               <div className="space-y-1.5">
                 <label
                   className="block text-sm font-medium text-slate-300"
@@ -157,25 +177,26 @@ function LoginPage() {
                     required
                     value={formData.password}
                     onChange={handleInputChange}
-                    disabled={isSubmitting}
-                    placeholder="••••••••"
+                    disabled={isAuthActionPending}
+                    placeholder="Enter your password"
                     className="block w-full px-4 py-2.5 pr-12 bg-[#101922]/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-[#137fec] focus:ring-1 focus:ring-[#137fec] sm:text-sm transition-all shadow-inner"
                   />
                   <button
                     type="button"
                     className="absolute inset-y-0 right-0 px-3 text-slate-400 hover:text-white cursor-pointer"
-                    onClick={() => setShowPassword((current) => !current)}
+                    onClick={() => setShowPassword((currentValue) => !currentValue)}
                   >
                     {showPassword ? "Hide" : "Show"}
                   </button>
                 </div>
               </div>
+
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isAuthActionPending}
                 className="w-full flex justify-center items-center py-3 px-4 rounded-lg text-sm font-semibold text-white bg-[#137fec] hover:bg-blue-600 focus:outline-none transition-all duration-200 cursor-pointer disabled:bg-slate-600 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? "Signing in..." : "Secure Login"}
+                {isAuthActionPending ? "Signing in..." : "Secure Login"}
               </button>
             </form>
           </div>

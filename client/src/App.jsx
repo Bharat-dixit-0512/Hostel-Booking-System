@@ -1,75 +1,196 @@
-import React from 'react';
-import { Route, Routes } from 'react-router-dom';
+import React from "react";
+import { Route, Routes } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
-// --- AUTH PAGES ---
-import LoginPage from './pages/LoginPage';
-
-// --- ADMIN PAGES ---
-import AdminDashboardPage from './pages/AdminDashboardPage';
-import AdminProfile from './pages/AdminProfile';
-import ManualBookingPage from './pages/ManualBookingPage';
-import ApplicationRegistryPage from './pages/ApplicationRegistryPage';
-import ConfirmedBookingsPage from './pages/ConfirmedBookingsPage';
-import InventoryConfigPage from './pages/InventoryConfig.jsx'; // Screenshot ke mutabiq
-import FCFSAnalytics from './pages/FCFSAnalytics';
-
-// --- STUDENT PAGES ---
-import StudentDashboardPage from './pages/StudentDashboardPage';
-import StudentProfile from './pages/StudentProfile';
-import BookingCountdownPage from './pages/BookingCountdownPage';
-import RoomSwapDashboard from './pages/RoomSwapDashboard';
-import AdminSwapApprovalPage from './pages/SwapApprovalPage.jsx';
-import PaymentPage from './pages/PaymentPage.jsx';
-import BrowseHostelsPage from './pages/BrowseHostelsPage.jsx';
+import {
+  ProtectedRoute,
+  PublicOnlyRoute,
+} from "./components/ProtectedRoute.jsx";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
+import AdminProfile from "./pages/AdminProfile";
+import ApplicationRegistryPage from "./pages/ApplicationRegistryPage.jsx";
+import BookingCountdownPage from "./pages/BookingCountdownPage.jsx";
+import BrowseHostelsPage from "./pages/BrowseHostelsPage.jsx";
+import ConfirmedBookingsPage from "./pages/ConfirmedBookingsPage.jsx";
+import FCFSAnalytics from "./pages/FCFSAnalytics.jsx";
+import InventoryConfigPage from "./pages/InventoryConfig.jsx";
+import LoginPage from "./pages/LoginPage";
+import ManualBookingPage from "./pages/ManualBookingPage.jsx";
+import PaymentPage from "./pages/PaymentPage.jsx";
+import RoomImportPage from "./pages/RoomImportPage.jsx";
+import RoomSwapDashboard from "./pages/RoomSwapDashboard.jsx";
+import AdminSwapApprovalPage from "./pages/SwapApprovalPage.jsx";
+import BookingHistoryPage from "./pages/BookingHistoryPage.jsx";
+import StudentDashboardPage from "./pages/StudentDashboardPage.jsx";
+import StudentProfile from "./pages/StudentProfile.jsx";
 
 function App() {
   return (
     <div className="min-h-screen bg-[#101922] relative overflow-hidden">
-      {/* Background Decor (Optional) */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute -top-[10%] -left-[5%] w-125 h-125bg-emerald-500/5 rounded-full blur-[120px]" />
+        <div className="absolute -top-[10%] -left-[5%] w-125 h-125 bg-emerald-500/5 rounded-full blur-[120px]" />
         <div className="absolute bottom-0 right-0 w-100 h-100 bg-blue-600/5 rounded-full blur-[100px]" />
       </div>
 
       <div className="relative z-10 min-h-screen">
         <Routes>
-          {/* Public / Auth Routes */}
-          <Route path="/" element={<LoginPage />} />
-          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/"
+            element={
+              <PublicOnlyRoute>
+                <LoginPage />
+              </PublicOnlyRoute>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <PublicOnlyRoute>
+                <LoginPage />
+              </PublicOnlyRoute>
+            }
+          />
 
-          {/* --- ADMIN ROUTES --- */}
-          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-          <Route path="/admin/profile" element={<AdminProfile />} />
-          <Route path="/admin/manual-booking" element={<ManualBookingPage />} />
-          <Route path="/admin/application-registry" element={<ApplicationRegistryPage />} />
-          <Route path="/admin/manage-hostels" element={<InventoryConfigPage />} />
-          <Route path="/admin/confirmed-bookings" element={<ConfirmedBookingsPage />} />
-          <Route path="/admin/fcfs-analytics" element={<FCFSAnalytics />} />
-          <Route path="/admin/swap-approvals" element={<AdminSwapApprovalPage />} />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute allowedLoginTypes={["admin"]}>
+                <AdminDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/profile"
+            element={
+              <ProtectedRoute allowedLoginTypes={["admin"]}>
+                <AdminProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/manual-booking"
+            element={
+              <ProtectedRoute allowedLoginTypes={["admin"]}>
+                <ManualBookingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/application-registry"
+            element={
+              <ProtectedRoute allowedLoginTypes={["admin"]}>
+                <ApplicationRegistryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/manage-hostels"
+            element={
+              <ProtectedRoute allowedLoginTypes={["admin"]}>
+                <InventoryConfigPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/room-import"
+            element={
+              <ProtectedRoute allowedLoginTypes={["admin"]}>
+                <RoomImportPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/confirmed-bookings"
+            element={
+              <ProtectedRoute allowedLoginTypes={["admin"]}>
+                <ConfirmedBookingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/fcfs-analytics"
+            element={
+              <ProtectedRoute allowedLoginTypes={["admin"]}>
+                <FCFSAnalytics />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/swap-approvals"
+            element={
+              <ProtectedRoute allowedLoginTypes={["admin"]}>
+                <AdminSwapApprovalPage />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* --- STUDENT ROUTES --- */}
-          <Route path="/student/dashboard" element={<StudentDashboardPage />} />
-          <Route path="/student/profile" element={<StudentProfile />} />
-          
-          {/* FCFS Logic Specific Student Routes */}
-          <Route path="/student/booking-countdown" element={<BookingCountdownPage />} />
-          <Route path="/student/room-swap" element={<RoomSwapDashboard />} />
-
-          <Route path="/student/booking" element={<BrowseHostelsPage />} />
-          <Route path="/student/payment" element={<PaymentPage />} />
-          
+          <Route
+            path="/student/dashboard"
+            element={
+              <ProtectedRoute allowedLoginTypes={["student"]}>
+                <StudentDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/profile"
+            element={
+              <ProtectedRoute allowedLoginTypes={["student"]}>
+                <StudentProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/booking-countdown"
+            element={
+              <ProtectedRoute allowedLoginTypes={["student"]}>
+                <BookingCountdownPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/room-swap"
+            element={
+              <ProtectedRoute allowedLoginTypes={["student"]}>
+                <RoomSwapDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/booking"
+            element={
+              <ProtectedRoute allowedLoginTypes={["student"]}>
+                <BrowseHostelsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/payment"
+            element={
+              <ProtectedRoute allowedLoginTypes={["student"]}>
+                <PaymentPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/booking-history"
+            element={
+              <ProtectedRoute allowedLoginTypes={["student"]}>
+                <BookingHistoryPage />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
-        
-        <Toaster 
+
+        <Toaster
           position="top-center"
           reverseOrder={false}
           toastOptions={{
             style: {
-              background: '#15202b',
-              color: '#fff',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '16px',
+              background: "#15202b",
+              color: "#fff",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "16px",
             },
           }}
         />

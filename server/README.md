@@ -1,199 +1,166 @@
 # Hostel Booking System - Server
 
-This is the backend server for the Hostel Booking System, responsible for handling all business logic, data storage, authentication, and API endpoints for the application. It is built with Node.js, Express, and MongoDB, and is designed to be robust, secure, and scalable for managing hostel operations.
+Backend API for the Hostel Booking System.
 
----
-
-## Table of Contents
-- [Features](#features)
-- [Architecture Overview](#architecture-overview)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Environment Variables](#environment-variables)
-- [Installation](#installation)
-- [Running the Server](#running-the-server)
-- [Database Seeding](#database-seeding)
-- [API Endpoints](#api-endpoints)
-- [Authentication & Authorization](#authentication--authorization)
-- [Error Handling](#error-handling)
-- [Development & Contribution](#development--contribution)
-- [License](#license)
-
----
-
-## Features
-- **User Authentication:** Supports login and registration for both students and admins using JWT tokens. Passwords are securely hashed with bcrypt.
-- **Role-Based Access Control:** Admins and students have different permissions and access to resources.
-- **Hostel & Room Management:** Admins can create, update, and delete hostels and rooms, set room capacities, and manage allowed years and genders.
-- **Booking System:** Students can view available rooms, book rooms, and cancel bookings. Admins can confirm, expire, or cancel bookings.
-- **Payment Integration:** Handles payment records and status updates for bookings.
-- **Multi-Database Support:** Separates authentication and hostel data into different MongoDB databases for better organization and security.
-- **File Uploads:** Supports uploading Excel files for bulk room import using Multer and XLSX.
-- **Comprehensive API:** RESTful endpoints for all major operations, with clear separation of concerns via controllers and routes.
-- **CORS & Security:** Configurable CORS, cookie parsing, and environment-based configuration for secure deployment.
-
----
-
-## Architecture Overview
-- **Express.js** is used as the web framework, with modular routers for different resources (auth, hostels, bookings, payments, admin).
-- **Mongoose** manages MongoDB connections and models, with separate connections for authentication and hostel data.
-- **Controllers** encapsulate business logic, while **middlewares** handle authentication, error handling, and request validation.
-- **Environment variables** are loaded via dotenv for flexible configuration.
-
----
+This service handles authentication, student booking flow, payment flow, and admin inventory controls.
 
 ## Tech Stack
-- **Node.js** (JavaScript runtime)
-- **Express.js** (Web framework)
-- **MongoDB** (Database)
-- **Mongoose** (ODM for MongoDB)
-- **JWT** (Authentication)
-- **bcryptjs** (Password hashing)
-- **dotenv** (Environment configuration)
-- **multer** (File uploads)
-- **xlsx** (Excel file parsing)
-- **cookie-parser**, **cors** (Security and cross-origin support)
-- **nodemon** (Development hot-reloading)
 
----
+- Node.js
+- Express 5
+- MongoDB + Mongoose
+- JWT (cookie and bearer-token auth)
+- Multer + XLSX (room import)
 
-## Project Structure
-```
-server/
-├── src/
-│   ├── app.js                # Express app setup and middleware
-│   ├── server.js             # Entry point, starts the server
-│   ├── constants.js          # Application-wide constants
-│   ├── db/                   # Database connection and logic
-│   ├── controllers/          # Business logic for each resource
-│   ├── middlewares/          # Custom Express middlewares
-│   ├── models/               # Mongoose models
-│   ├── routes/               # Express routers
-│   ├── scripts/              # Database seeding and utility scripts
-│   └── utils/                # Utility functions
-├── .env.example              # Example environment variables
-├── package.json              # NPM configuration
-└── README.md                 # Project documentation
+## Quick Start
+
+1. Install dependencies.
+
+```bash
+npm install
 ```
 
----
+2. Create env file.
+
+```bash
+cp .env.example .env
+```
+
+3. Run in development.
+
+```bash
+npm run dev
+```
+
+4. Run in production mode.
+
+```bash
+npm start
+```
+
+## NPM Scripts
+
+- npm run dev: Start server with nodemon
+- npm start: Start server with node
+- npm run seed:auth: Seed auth and hostel student profile data
+- npm run seed:auth:admins: Seed admin users only
+- npm run seed:auth:students: Seed student users only
 
 ## Environment Variables
-Create a `.env` file in the `server/` directory based on `.env.example`. Required variables:
-- `PORT` - Port number for the server (default: 5000)
-- `MONGODB_URI` - MongoDB connection string
-- `COOKIE_SECRET` - Secret for signing cookies
-- `CORS_ORIGIN` - Allowed origins for CORS (comma-separated)
-- `CLIENT_URL` - URL of the frontend client
 
----
+Defined in .env.example:
 
-## Installation
-1. **Clone the repository:**
-   ```bash
-   git clone <repo-url>
-   cd Hostel-Booking-System/server
-   ```
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-3. **Configure environment:**
-   - Copy `.env.example` to `.env` and fill in the required values.
+- PORT: Server port (default 5000)
+- NODE_ENV: Environment name
+- MONGODB_URI: Base Mongo connection URI
+- JWT_SECRET: Secret used to sign access tokens
+- JWT_EXPIRE: Token expiry duration (example: 1d)
+- COOKIE_SECRET: Secret for signed cookies
+- CLIENT_URL: Frontend URL (used as CORS fallback)
+- CORS_ORIGIN: Comma-separated allowed origins
 
----
+## Architecture Notes
 
-## Running the Server
-- **Development mode (with hot reload):**
-  ```bash
-  npm run dev
-  ```
-- **Production mode:**
-  ```bash
-  npm start
-  ```
+- Two Mongo databases are used from one URI:
+  - AuthDB for admin/student auth entities
+  - HostelDB for hostels, rooms, bookings, counters, and booking window
+- API base path is /api
+- Routers mounted in src/app.js:
+  - /api/auth
+  - /api/hostels
+  - /api/bookings
+  - /api/payments
+  - /api/admin
 
----
+## Authentication and Authorization
 
-## Database Seeding
-- **Seed authentication database:**
-  ```bash
-  npm run seed:auth
-  ```
-- **Seed admin users:**
-  ```bash
-  npm run seed:auth:admins
-  ```
-- **Seed student users:**
-  ```bash
-  npm run seed:auth:students
-  ```
+- Access token is accepted either from:
+  - Authorization: Bearer <token>
+  - accessToken cookie
+- Protected routes use middleware in src/middlewares/auth.middleware.js
+- Role rules:
+  - Student routes: login_type must be student
+  - Admin routes: login_type must be admin
+  - Some admin routes require role mainadmin
 
----
+## API Endpoints (Current)
 
-## API Endpoints
-### Health Check
-- `GET /api/health` - Returns server health status.
+### Health
 
-### Authentication
-- `POST /api/auth/register` - Register a new user (student or admin)
-- `POST /api/auth/login` - Login and receive JWT token
-- `POST /api/auth/logout` - Logout user
-- `GET /api/auth/profile` - Get current user profile
+- GET /api/health
 
-### Hostels
-- `GET /api/hostels` - List all hostels
-- `POST /api/hostels` - Create a new hostel (admin only)
-- `GET /api/hostels/:id` - Get hostel details
-- `PUT /api/hostels/:id` - Update hostel info (admin only)
-- `DELETE /api/hostels/:id` - Delete hostel (admin only)
+### Auth
 
-### Rooms
-- `GET /api/hostels/:hostelId/rooms` - List rooms in a hostel
-- `POST /api/hostels/:hostelId/rooms` - Add a room (admin only)
-- `PUT /api/hostels/:hostelId/rooms/:roomId` - Update room info (admin only)
-- `DELETE /api/hostels/:hostelId/rooms/:roomId` - Delete room (admin only)
+- POST /api/auth/student/login
+- POST /api/auth/admin/login
+- POST /api/auth/logout
+- GET /api/auth/me
 
-### Bookings
-- `GET /api/bookings` - List bookings (user or admin)
-- `POST /api/bookings` - Create a new booking (student)
-- `PATCH /api/bookings/:id/cancel` - Cancel a booking
-- `PATCH /api/bookings/:id/confirm` - Confirm a booking (admin)
-- `PATCH /api/bookings/:id/expire` - Expire a booking (admin)
+### Student Hostels
 
-### Payments
-- `GET /api/payments` - List payments
-- `POST /api/payments` - Record a payment
+- GET /api/hostels
+- GET /api/hostels/:hostelId/rooms
 
-### Admin
-- `GET /api/admin/users` - List all users (admin only)
-- `POST /api/admin/users` - Create a new admin user
-- `PATCH /api/admin/users/:id` - Update admin user
-- `DELETE /api/admin/users/:id` - Delete admin user
+### Student Bookings
 
----
+- POST /api/bookings
+- GET /api/bookings/me
+- PUT /api/bookings/:id/cancel
 
-## Authentication & Authorization
-- Uses JWT tokens for stateless authentication.
-- Passwords are hashed with bcrypt before storage.
-- Role-based access control ensures only authorized users can access admin routes.
-- Middleware checks for valid tokens and permissions on protected routes.
+### Student Payments
 
----
+- POST /api/payments/create-session
+- POST /api/payments/confirm
+- GET /api/payments/:id/status
 
-## Error Handling
-- Centralized error handler middleware returns consistent error responses.
-- 404 handler for unknown routes.
-- Validation errors and database errors are handled gracefully.
+### Admin (All require admin login)
 
----
+- GET /api/admin/hostels
+- GET /api/admin/bookings
+- GET /api/admin/eligible-students
+- GET /api/admin/hostels/:hostelId/rooms
+- GET /api/admin/booking-window
+- POST /api/admin/offline-bookings
 
-## Development & Contribution
-- Use feature branches for new features or bug fixes.
-- Run `npm run dev` for development with hot reloading.
-- Ensure code is well-documented and tested before submitting pull requests.
+### Admin (mainadmin only)
 
----
+- POST /api/admin/hostels
+- PUT /api/admin/hostels/:hostelId
+- DELETE /api/admin/hostels/:hostelId
+- PUT /api/admin/hostels/:hostelId/allowed-years
+- POST /api/admin/hostels/:hostelId/rooms
+- PUT /api/admin/hostels/:hostelId/rooms/:roomNumber
+- DELETE /api/admin/hostels/:hostelId/rooms/:roomNumber
+- POST /api/admin/hostels/:hostelId/rooms/import/preview (multipart/form-data, file field: file)
+- POST /api/admin/hostels/:hostelId/rooms/import/confirm (multipart/form-data, file field: file)
+- PATCH /api/admin/booking-window
+- POST /api/admin/session/reset
+
+## Project Structure
+
+```
+server/
+  src/
+    app.js
+    server.js
+    constants.js
+    controllers/
+    db/
+    middlewares/
+    models/
+    routes/
+    scripts/
+    utils/
+  .env.example
+  package.json
+  README.md
+```
+
+## Notes
+
+- This README reflects routes currently implemented in src/routes.
+- Removed old docs for /api/admin/users endpoints because those routes are not present in the current code.
 
 ## License
-This project is licensed under the ISC License.
+
+ISC
