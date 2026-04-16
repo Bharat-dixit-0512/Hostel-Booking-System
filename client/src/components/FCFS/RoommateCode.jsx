@@ -21,7 +21,7 @@ const RoommateCode = ({ code, isOwner = true }) => {
                         <code className="flex-1 px-4 py-3 bg-black/40 rounded-xl text-white font-mono font-bold text-center tracking-[0.5em]">
                             {code}
                         </code>
-                        <button onClick={copyToClipboard} className="p-3 bg-purple-600 rounded-xl text-white hover:bg-purple-500 transition-all">
+                        <button onClick={copyToClipboard} className="p-3 bg-purple-600 rounded-xl text-white hover:bg-purple-500 transition-all cursor-pointer">
                             <Copy size={18} />
                         </button>
                     </div>
@@ -32,7 +32,7 @@ const RoommateCode = ({ code, isOwner = true }) => {
                         className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white text-center focus:border-purple-500 outline-none"
                         placeholder="Enter Friend's Code"
                     />
-                    <button className="w-full py-3 bg-purple-600 text-white rounded-xl font-bold text-xs">JOIN ROOM</button>
+                    <button className="w-full py-3 bg-purple-600 text-white rounded-xl font-bold text-xs cursor-pointer">JOIN ROOM</button>
                 </div>
             )}
         </div>

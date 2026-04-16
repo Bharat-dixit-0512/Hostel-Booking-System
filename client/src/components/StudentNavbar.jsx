@@ -60,7 +60,7 @@ function StudentNavbar() {
         <Link
           to="/student/dashboard"
           onClick={() => playClickSound()}
-          className="flex items-center gap-3 active:scale-95 transition-transform"
+          className="flex items-center gap-3 active:scale-95 transition-transform cursor-pointer"
         >
           <div className="w-9 h-9 rounded-lg bg-[#137fec] flex items-center justify-center shadow-[0_0_15px_rgba(19,127,236,0.4)]">
             <Hotel className="text-white w-5 h-5" />
@@ -78,14 +78,14 @@ function StudentNavbar() {
         <div className="flex items-center gap-8">
           <Link
             to="/student/booking"
-            className="text-slate-400 hover:text-[#137fec] text-sm font-semibold transition-colors hidden sm:block"
+            className="text-slate-400 hover:text-[#137fec] text-sm font-semibold transition-colors hidden sm:block cursor-pointer"
           >
             Browse Hostels
           </Link>
 
           <Link
             to="/student/booking-history"
-            className="text-slate-400 hover:text-[#137fec] text-sm font-semibold transition-colors hidden sm:flex items-center gap-2"
+            className="text-slate-400 hover:text-[#137fec] text-sm font-semibold transition-colors hidden sm:flex items-center gap-2 cursor-pointer"
           >
             <History size={16} />
             Booking History

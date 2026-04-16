@@ -19,6 +19,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useClickMouse } from "../hooks/ClickMouse";
 import axiosInstance from "../lib/axios";
 import { getErrorMessage } from "../lib/errors";
+import AnimatedLogout from "../components/AnimatedLogout";
 
 const StatMini = ({ label, value, tone = "text-emerald-500" }) => (
   <div className="px-6 py-4 rounded-2xl bg-[#15202b]/60 border border-white/5 text-right backdrop-blur-md">
@@ -272,12 +273,13 @@ function AdminDashboardPage() {
               </div>
             </AnimatedBorder>
           </div>
-
           <div className="lg:col-span-4">
+            <AnimatedLogout>
             <ResetSystemAction
               disabled={!isMainAdmin}
               onSuccess={loadDashboard}
             />
+            </AnimatedLogout>
           </div>
         </div>
 

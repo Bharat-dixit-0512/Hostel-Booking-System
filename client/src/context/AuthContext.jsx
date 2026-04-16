@@ -8,7 +8,8 @@ const normalizeStudentUser = (user) => ({
   ...user,
   year: user?.year ?? user?.hostelStudent?.year ?? null,
   gender: user?.gender ?? user?.hostelStudent?.gender ?? null,
-  room_allocated: user?.room_allocated ?? user?.hostelStudent?.room_allocated ?? false,
+  room_allocated:
+    user?.room_allocated ?? user?.hostelStudent?.room_allocated ?? false,
   hostel_id: user?.hostel_id ?? user?.hostelStudent?.hostel_id ?? null,
   room_number: user?.room_number ?? user?.hostelStudent?.room_number ?? null,
 });

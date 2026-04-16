@@ -3,7 +3,7 @@ import { QrCode, Download, Printer } from 'lucide-react';
 
 const AllotmentSlip = ({ studentData }) => {
     return (
-        <div className="p-8 bg-white text-black rounded-[32px] max-w-sm mx-auto space-y-6">
+        <div className="p-8 bg-white text-black rounded-4xl max-w-sm mx-auto space-y-6">
             <div className="text-center border-b pb-6 border-slate-100">
                 <h3 className="font-black text-xl uppercase tracking-tighter">GLA University</h3>
                 <p className="text-[10px] font-bold text-slate-400">Hostel Allotment Slip 2024-25</p>
@@ -28,7 +28,7 @@ const AllotmentSlip = ({ studentData }) => {
                 </div>
             </div>
 
-            <button className="w-full py-3 bg-black text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2">
+            <button className="w-full py-3 bg-black text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer">
                 <Download size={14} /> Save Digital Copy
             </button>
         </div>

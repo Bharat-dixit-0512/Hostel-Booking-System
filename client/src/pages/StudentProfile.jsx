@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 
 import AnimatedBorder from "../components/AnimatedBorder";
 import StudentNavbar from "../components/StudentNavbar";
+import ThemePreferenceCard from "../components/ThemePreferenceCard";
 import { useAuth } from "../hooks/useAuth";
 import axiosInstance from "../lib/axios";
 import { getErrorMessage } from "../lib/errors";
@@ -197,6 +198,14 @@ function StudentProfile() {
                 </div>
               </div>
             </AnimatedBorder>
+
+            <ThemePreferenceCard
+              accentTextClass="text-[#137fec]"
+              accentSurfaceClass="bg-[#137fec]/10"
+              accentBorderClass="border-[#137fec]/20"
+              accentGlowClass="shadow-[0_0_20px_rgba(19,127,236,0.16)]"
+              accentLabel="Profile Switch"
+            />
 
             <div className="bg-[#15202b]/40 border border-white/5 p-6 rounded-3xl text-center backdrop-blur-md">
               <p className="text-[10px] text-slate-600 font-bold uppercase tracking-[0.3em]">

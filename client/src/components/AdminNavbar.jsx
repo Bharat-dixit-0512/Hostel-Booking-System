@@ -55,7 +55,7 @@ function AdminNavbar() {
         <Link
           to="/admin/dashboard"
           onClick={() => playClickSound()}
-          className="flex items-center gap-3"
+          className="flex items-center gap-3 cursor-pointer"
         >
           <div className="w-9 h-9 rounded-lg bg-emerald-500 flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.4)]">
             <ShieldCheck className="text-white w-5 h-5" />
@@ -72,15 +72,15 @@ function AdminNavbar() {
 
         <div className="relative" ref={dropdownRef}>
           <button
-            onClick={() => {
-              playClickSound();
-              setIsDropdownOpen((currentValue) => !currentValue);
-            }}
+              onClick={() => {
+                playClickSound();
+                setIsDropdownOpen((currentValue) => !currentValue);
+              }}
             className="cursor-pointer"
           >
             <AnimatedBorder
               className="min-w-35"
-              color="conic-gradient(from 90deg at 50% 50%, #00b050 0%, #101922 25%, #00b050 50%, #101922 75%, #00b050 100%)"
+              color="conic-gradient(from 90deg at 50% 50%, #00b050 0%, var(--theme-border-base) 25%, #00b050 50%, var(--theme-border-base) 75%, #00b050 100%)"
             >
               <div className="px-3 py-1.5 flex items-center gap-2">
                 <div className="w-6 h-6 rounded-md bg-emerald-500/20 flex items-center justify-center text-[10px] font-bold text-emerald-500">
@@ -102,7 +102,7 @@ function AdminNavbar() {
             <div className="absolute right-0 mt-2 w-48 bg-[#15202b] border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
               <AnimatedBorder
                 className="w-full"
-                color="conic-gradient(from 90deg at 50% 50%, #00b050 0%, #101922 25%, #00b050 50%, #101922 75%, #00b050 100%)"
+                color="conic-gradient(from 90deg at 50% 50%, #00b050 0%, var(--theme-border-base) 25%, #00b050 50%, var(--theme-border-base) 75%, #00b050 100%)"
               >
                 <button
                   onClick={() => handleAction("/admin/profile")}
