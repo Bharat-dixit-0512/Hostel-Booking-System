@@ -15,6 +15,7 @@ const STATUS_STYLES = {
 
 const formatDateTime = (value) =>
   value ? new Date(value).toLocaleString() : "N/A";
+const formatCurrency = (value) => `Rs. ${Number(value ?? 0).toLocaleString("en-IN")}`;
 
 function ConfirmedBookingsPage() {
   const [bookings, setBookings] = useState([]);
@@ -46,16 +47,22 @@ function ConfirmedBookingsPage() {
         const matchesSearch =
           String(booking.roll_number).includes(searchTerm) ||
           booking._id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          booking.room_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          booking.room_number
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
           booking.hostel_name?.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = statusFilter === "ALL" || booking.status === statusFilter;
+        const matchesStatus =
+          statusFilter === "ALL" || booking.status === statusFilter;
 
         return matchesSearch && matchesStatus;
       }),
-    [bookings, searchTerm, statusFilter]
+    [bookings, searchTerm, statusFilter],
   );
 
-  const availableStatuses = ["ALL", ...new Set(bookings.map((booking) => booking.status))];
+  const availableStatuses = [
+    "ALL",
+    ...new Set(bookings.map((booking) => booking.status)),
+  ];
 
   return (
     <div className="min-h-screen bg-[#101922] text-slate-200">
@@ -64,13 +71,16 @@ function ConfirmedBookingsPage() {
       <main className="max-w-6xl mx-auto pt-28 px-6 pb-12 space-y-8">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h1 className="text-3xl font-black text-white tracking-tight">Booking Registry</h1>
+            <h1 className="text-3xl font-black text-white tracking-tight">
+              Booking Registry
+            </h1>
             <p className="text-slate-500 text-sm font-medium mt-1">
-              Live booking records from the admin API, including confirmed, pending, expired, and cancelled states.
+              Live booking records from the admin API, including confirmed,
+              pending, expired, and cancelled states.
             </p>
           </div>
 
-          <div className="flex flex-col md:flex-row items-stretch gap-3">
+          <div className="flex flex-col gap-3 md:min-w-[28rem]">
             <div className="relative group">
               <Search
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors"
@@ -84,17 +94,26 @@ function ConfirmedBookingsPage() {
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
             </div>
-            <select
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-              className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-xs outline-none focus:border-blue-500/50 transition-all"
-            >
-              {availableStatuses.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
+            <div className="flex flex-wrap gap-2">
+              {availableStatuses.map((status) => {
+                const isActive = statusFilter === status;
+
+                return (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => setStatusFilter(status)}
+                    className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider border transition-all cursor-pointer ${
+                      isActive
+                        ? "bg-[#137fec] text-white border-[#137fec] shadow-lg shadow-[#137fec]/20"
+                        : "bg-white/5 text-slate-300 border-white/10 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    {status}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </header>
 
@@ -126,13 +145,19 @@ function ConfirmedBookingsPage() {
               <tbody className="divide-y divide-white/5">
                 {isLoading ? (
                   <tr>
-                    <td colSpan="6" className="px-8 py-16 text-center text-slate-500">
+                    <td
+                      colSpan="6"
+                      className="px-8 py-16 text-center text-slate-500"
+                    >
                       Loading bookings...
                     </td>
                   </tr>
                 ) : filteredBookings.length > 0 ? (
                   filteredBookings.map((booking) => (
-                    <tr key={booking._id} className="hover:bg-white/2 transition-colors">
+                    <tr
+                      key={booking._id}
+                      className="hover:bg-white/2 transition-colors"
+                    >
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-2">
                           <Hash size={14} className="text-blue-500" />
@@ -142,14 +167,20 @@ function ConfirmedBookingsPage() {
                         </div>
                       </td>
                       <td className="px-8 py-6">
-                        <p className="font-bold text-sm text-white">{booking.roll_number}</p>
+                        <p className="font-bold text-sm text-white">
+                          {booking.roll_number}
+                        </p>
                         <p className="text-[10px] text-slate-500 uppercase mt-0.5">
                           Payment Ref: {booking.payment_reference || "N/A"}
+                        </p>
+                        <p className="text-[10px] text-slate-500 uppercase mt-0.5">
+                          Amount: {formatCurrency(booking.price)}
                         </p>
                       </td>
                       <td className="px-8 py-6">
                         <div className="text-xs text-slate-300 font-medium">
-                          {booking.hostel_name || `Hostel #${booking.hostel_id}`}
+                          {booking.hostel_name ||
+                            `Hostel #${booking.hostel_id}`}
                         </div>
                         <div className="text-[10px] text-blue-400 font-black mt-0.5 tracking-widest">
                           ROOM {booking.room_number}
@@ -158,14 +189,17 @@ function ConfirmedBookingsPage() {
                       <td className="px-8 py-6">
                         <span
                           className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter ${
-                            STATUS_STYLES[booking.status] || "bg-white/10 text-slate-300"
+                            STATUS_STYLES[booking.status] ||
+                            "bg-white/10 text-slate-300"
                           }`}
                         >
                           {booking.status}
                         </span>
                       </td>
                       <td className="px-8 py-6">
-                        <p className="text-xs font-bold text-white uppercase">{booking.source}</p>
+                        <p className="text-xs font-bold text-white uppercase">
+                          {booking.source}
+                        </p>
                         <p className="text-[10px] text-slate-500 uppercase mt-1">
                           Booked by {booking.booked_by_type}
                         </p>
@@ -173,18 +207,28 @@ function ConfirmedBookingsPage() {
                       <td className="px-8 py-6">
                         <div className="space-y-1 text-xs text-slate-400">
                           <p className="flex items-center gap-2">
-                            <CalendarDays size={12} className="text-slate-500" />
+                            <CalendarDays
+                              size={12}
+                              className="text-slate-500"
+                            />
                             Created: {formatDateTime(booking.created_at)}
                           </p>
-                          <p>Confirmed: {formatDateTime(booking.confirmed_at)}</p>
+                          <p>
+                            Confirmed: {formatDateTime(booking.confirmed_at)}
+                          </p>
                         </div>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" className="px-8 py-20 text-center text-slate-500">
-                      <p className="text-sm italic">No booking records match your current filters.</p>
+                    <td
+                      colSpan="6"
+                      className="px-8 py-20 text-center text-slate-500"
+                    >
+                      <p className="text-sm italic">
+                        No booking records match your current filters.
+                      </p>
                     </td>
                   </tr>
                 )}

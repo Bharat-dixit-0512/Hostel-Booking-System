@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from "react";
 import {
+  ChevronDown,
+  FileUp,
+  Pencil,
   Plus,
   Settings2,
   Trash2,
+  Layers,
   Home,
   X,
   BedDouble,
@@ -10,6 +14,7 @@ import {
   Snowflake,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 import AdminNavbar from "../components/AdminNavbar";
 import { useAuth } from "../hooks/useAuth";
@@ -17,29 +22,68 @@ import axiosInstance from "../lib/axios";
 import { getErrorMessage } from "../lib/errors";
 
 const STUDENT_YEARS = ["1st", "2nd", "3rd", "4th"];
+const PRICING_CATEGORIES = [
+  { capacity: 1, ac_type: true, label: "1 Bed AC" },
+  { capacity: 1, ac_type: false, label: "1 Bed Non-AC" },
+  { capacity: 2, ac_type: true, label: "2 Bed AC" },
+  { capacity: 2, ac_type: false, label: "2 Bed Non-AC" },
+  { capacity: 3, ac_type: true, label: "3 Bed AC" },
+  { capacity: 3, ac_type: false, label: "3 Bed Non-AC" },
+];
 
-const RoomCard = ({ canManage, onDelete, room }) => (
+const getNormalizedPricing = (pricingRows = []) =>
+  PRICING_CATEGORIES.map((category) => {
+    const existingPricing = pricingRows.find(
+      (row) =>
+        Number(row.capacity) === category.capacity &&
+        Boolean(row.ac_type) === category.ac_type,
+    );
+
+    return {
+      ...category,
+      price: Number(existingPricing?.price ?? 0),
+    };
+  });
+
+const RoomCard = ({ canManage, onDelete, onEdit, room }) => (
   <div className="bg-black/20 border border-white/5 p-5 rounded-3xl group relative hover:border-emerald-500/30 transition-all">
     <div className="flex justify-between items-start mb-4">
       <span
         className={`px-2 py-1 rounded text-[9px] font-black uppercase ${
-          room.ac_type ? "bg-blue-500/20 text-blue-400" : "bg-orange-500/20 text-orange-400"
+          room.ac_type
+            ? "bg-blue-500/20 text-blue-400"
+            : "bg-orange-500/20 text-orange-400"
         }`}
       >
         {room.ac_type ? "AC" : "Non-AC"}
       </span>
       {canManage ? (
-        <button
-          type="button"
-          onClick={() => onDelete(room)}
-          className="text-slate-600 hover:text-red-500 transition-colors cursor-pointer"
-        >
-          <Trash2 size={14} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onEdit(room)}
+            className="text-slate-600 hover:text-emerald-400 transition-colors cursor-pointer"
+          >
+            <Pencil size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(room)}
+            className="text-slate-600 hover:text-red-500 transition-colors cursor-pointer"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
       ) : null}
     </div>
-    <h5 className="text-xl font-bold text-white mb-1">Room {room.room_number}</h5>
+    <h5 className="text-xl font-bold text-white mb-1">
+      Room {room.room_number}
+    </h5>
     <div className="space-y-2 text-xs text-slate-400 font-bold">
+      <div className="flex items-center gap-2">
+        <Layers size={14} className="text-indigo-400" />
+        Floor {room.floor ?? 0}
+      </div>
       <div className="flex items-center gap-2">
         <BedDouble size={14} className="text-emerald-400" />
         Capacity {room.capacity} / Available {room.available_beds}
@@ -55,6 +99,7 @@ const RoomCard = ({ canManage, onDelete, room }) => (
 );
 
 function InventoryConfigPage() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [hostels, setHostels] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -63,11 +108,16 @@ function InventoryConfigPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState("hostel");
   const [activeHostel, setActiveHostel] = useState(null);
+  const [activeRoom, setActiveRoom] = useState(null);
+  const [expandedHostelId, setExpandedHostelId] = useState(null);
+  const [pricingSavingHostelId, setPricingSavingHostelId] = useState(null);
   const [formData, setFormData] = useState({
     hostel_name: "",
     gender: "male",
+    floors: 1,
     allowed_years: ["1st"],
     room_number: "",
+    floor: 0,
     capacity: 1,
     ac_type: false,
   });
@@ -87,18 +137,19 @@ function InventoryConfigPage() {
             .then((response) => ({
               hostel_id: hostel.hostel_id,
               rooms: response.data?.data?.rooms || [],
-            }))
-        )
+            })),
+        ),
       );
       const roomsByHostelId = new Map(
-        roomsResponses.map((entry) => [entry.hostel_id, entry.rooms])
+        roomsResponses.map((entry) => [entry.hostel_id, entry.rooms]),
       );
 
       setHostels(
         fetchedHostels.map((hostel) => ({
           ...hostel,
           rooms: roomsByHostelId.get(hostel.hostel_id) || [],
-        }))
+          pricing: getNormalizedPricing(hostel.pricing || []),
+        })),
       );
     } catch (error) {
       toast.error(getErrorMessage(error, "Unable to load inventory"));
@@ -114,23 +165,46 @@ function InventoryConfigPage() {
   const closeModal = () => {
     setIsModalOpen(false);
     setActiveHostel(null);
+    setActiveRoom(null);
     setFormData({
       hostel_name: "",
       gender: "male",
+      floors: 1,
       allowed_years: ["1st"],
       room_number: "",
+      floor: 0,
       capacity: 1,
       ac_type: false,
     });
   };
 
-  const openModal = (type, hostel = null) => {
+  const openModal = (type, hostel = null, room = null) => {
     if (!canManage) {
       return;
     }
 
     setModalType(type);
     setActiveHostel(hostel);
+    setActiveRoom(room);
+
+    if (type === "hostel-edit" && hostel) {
+      setFormData((currentValue) => ({
+        ...currentValue,
+        hostel_name: hostel.hostel_name || "",
+        gender: hostel.gender || "male",
+        floors: hostel.floors ?? 1,
+        allowed_years: hostel.allowed_years || ["1st"],
+      }));
+    } else if (type === "room-edit" && room) {
+      setFormData((currentValue) => ({
+        ...currentValue,
+        room_number: room.room_number || "",
+        floor: room.floor ?? 0,
+        capacity: room.capacity || 1,
+        ac_type: Boolean(room.ac_type),
+      }));
+    }
+
     setIsModalOpen(true);
   };
 
@@ -154,6 +228,14 @@ function InventoryConfigPage() {
       return;
     }
 
+    if (
+      !Number.isInteger(Number(formData.floors)) ||
+      Number(formData.floors) < 1
+    ) {
+      toast.error("Enter valid number of floors");
+      return;
+    }
+
     setIsSaving(true);
     const toastId = toast.loading("Creating hostel...");
 
@@ -161,13 +243,16 @@ function InventoryConfigPage() {
       await axiosInstance.post("/admin/hostels", {
         hostel_name: formData.hostel_name.trim(),
         gender: formData.gender,
+        floors: Number(formData.floors),
         allowed_years: formData.allowed_years,
       });
       toast.success("Hostel created successfully", { id: toastId });
       closeModal();
       await loadInventory();
     } catch (error) {
-      toast.error(getErrorMessage(error, "Unable to create hostel"), { id: toastId });
+      toast.error(getErrorMessage(error, "Unable to create hostel"), {
+        id: toastId,
+      });
     } finally {
       setIsSaving(false);
     }
@@ -183,20 +268,137 @@ function InventoryConfigPage() {
       return;
     }
 
+    if (
+      !Number.isInteger(Number(formData.floor)) ||
+      Number(formData.floor) < 0
+    ) {
+      toast.error("Enter valid room floor");
+      return;
+    }
+
+    if (Number(formData.floor) >= Number(activeHostel.floors ?? 1)) {
+      toast.error(
+        `Room floor must be between 0 and ${(activeHostel.floors ?? 1) - 1}`,
+      );
+      return;
+    }
+
     setIsSaving(true);
     const toastId = toast.loading("Creating room...");
 
     try {
-      await axiosInstance.post(`/admin/hostels/${activeHostel.hostel_id}/rooms`, {
-        room_number: formData.room_number.trim(),
-        capacity: Number(formData.capacity),
-        ac_type: Boolean(formData.ac_type),
-      });
+      await axiosInstance.post(
+        `/admin/hostels/${activeHostel.hostel_id}/rooms`,
+        {
+          room_number: formData.room_number.trim(),
+          floor: Number(formData.floor),
+          capacity: Number(formData.capacity),
+          ac_type: Boolean(formData.ac_type),
+        },
+      );
       toast.success(`Room ${formData.room_number} added`, { id: toastId });
       closeModal();
       await loadInventory();
     } catch (error) {
-      toast.error(getErrorMessage(error, "Unable to create room"), { id: toastId });
+      toast.error(getErrorMessage(error, "Unable to create room"), {
+        id: toastId,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateHostel = async () => {
+    if (!activeHostel) {
+      return;
+    }
+
+    if (!formData.hostel_name.trim()) {
+      toast.error("Enter hostel name");
+      return;
+    }
+
+    if (formData.allowed_years.length === 0) {
+      toast.error("Select at least one allowed year");
+      return;
+    }
+
+    if (
+      !Number.isInteger(Number(formData.floors)) ||
+      Number(formData.floors) < 1
+    ) {
+      toast.error("Enter valid number of floors");
+      return;
+    }
+
+    setIsSaving(true);
+    const toastId = toast.loading("Updating hostel...");
+
+    try {
+      await Promise.all([
+        axiosInstance.put(`/admin/hostels/${activeHostel.hostel_id}`, {
+          hostel_name: formData.hostel_name.trim(),
+          gender: formData.gender,
+          floors: Number(formData.floors),
+        }),
+        axiosInstance.put(
+          `/admin/hostels/${activeHostel.hostel_id}/allowed-years`,
+          {
+            allowed_years: formData.allowed_years,
+          },
+        ),
+      ]);
+      toast.success(`${formData.hostel_name.trim()} updated`, { id: toastId });
+      closeModal();
+      await loadInventory();
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to update hostel"), {
+        id: toastId,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateRoom = async () => {
+    if (!activeHostel || !activeRoom) {
+      return;
+    }
+
+    if (
+      !Number.isInteger(Number(formData.floor)) ||
+      Number(formData.floor) < 0
+    ) {
+      toast.error("Enter valid room floor");
+      return;
+    }
+
+    if (Number(formData.floor) >= Number(activeHostel.floors ?? 1)) {
+      toast.error(
+        `Room floor must be between 0 and ${(activeHostel.floors ?? 1) - 1}`,
+      );
+      return;
+    }
+
+    setIsSaving(true);
+    const toastId = toast.loading("Updating room...");
+
+    try {
+      await axiosInstance.put(
+        `/admin/hostels/${activeHostel.hostel_id}/rooms/${encodeURIComponent(activeRoom.room_number)}`,
+        {
+          floor: Number(formData.floor),
+          capacity: Number(formData.capacity),
+          ac_type: Boolean(formData.ac_type),
+        },
+      );
+      toast.success(`Room ${activeRoom.room_number} updated`, { id: toastId });
+      closeModal();
+      await loadInventory();
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to update room"), {
+        id: toastId,
+      });
     } finally {
       setIsSaving(false);
     }
@@ -208,7 +410,7 @@ function InventoryConfigPage() {
     }
 
     const confirmed = window.confirm(
-      `Delete ${hostel.hostel_name} and its inventory? This will fail if any room has booked capacity.`
+      `Delete ${hostel.hostel_name} and its inventory? This will fail if any room has booked capacity.`,
     );
 
     if (!confirmed) {
@@ -222,7 +424,9 @@ function InventoryConfigPage() {
       toast.success(`${hostel.hostel_name} deleted`, { id: toastId });
       await loadInventory();
     } catch (error) {
-      toast.error(getErrorMessage(error, "Unable to delete hostel"), { id: toastId });
+      toast.error(getErrorMessage(error, "Unable to delete hostel"), {
+        id: toastId,
+      });
     }
   };
 
@@ -232,7 +436,7 @@ function InventoryConfigPage() {
     }
 
     const confirmed = window.confirm(
-      `Delete room ${room.room_number} from ${hostel.hostel_name}? This will fail if the room has booked capacity.`
+      `Delete room ${room.room_number} from ${hostel.hostel_name}? This will fail if the room has booked capacity.`,
     );
 
     if (!confirmed) {
@@ -243,18 +447,104 @@ function InventoryConfigPage() {
 
     try {
       await axiosInstance.delete(
-        `/admin/hostels/${hostel.hostel_id}/rooms/${encodeURIComponent(room.room_number)}`
+        `/admin/hostels/${hostel.hostel_id}/rooms/${encodeURIComponent(room.room_number)}`,
       );
       toast.success(`Room ${room.room_number} deleted`, { id: toastId });
       await loadInventory();
     } catch (error) {
-      toast.error(getErrorMessage(error, "Unable to delete room"), { id: toastId });
+      toast.error(getErrorMessage(error, "Unable to delete room"), {
+        id: toastId,
+      });
+    }
+  };
+
+  const handlePricingInputChange = (hostelId, capacity, acType, priceValue) => {
+    setHostels((currentHostels) =>
+      currentHostels.map((hostel) => {
+        if (hostel.hostel_id !== hostelId) {
+          return hostel;
+        }
+
+        return {
+          ...hostel,
+          pricing: (hostel.pricing || []).map((row) =>
+            row.capacity === capacity && row.ac_type === acType
+              ? {
+                  ...row,
+                  price: priceValue,
+                }
+              : row,
+          ),
+        };
+      }),
+    );
+  };
+
+  const handleSaveHostelPricing = async (hostel) => {
+    if (!canManage) {
+      return;
+    }
+
+    const normalizedPricing = getNormalizedPricing(hostel.pricing || []);
+    const hasInvalidPrice = normalizedPricing.some(
+      (row) => Number(row.price) < 0 || Number.isNaN(Number(row.price)),
+    );
+
+    if (hasInvalidPrice) {
+      toast.error("All prices must be non-negative numbers");
+      return;
+    }
+
+    const toastId = toast.loading("Saving pricing...");
+    setPricingSavingHostelId(hostel.hostel_id);
+
+    try {
+      const response = await axiosInstance.put(
+        `/admin/hostels/${hostel.hostel_id}/pricing`,
+        {
+          pricing: normalizedPricing.map((row) => ({
+            capacity: row.capacity,
+            ac_type: row.ac_type,
+            price: Number(row.price),
+          })),
+        },
+      );
+
+      const updatedPricing = getNormalizedPricing(
+        response.data?.data?.pricing || normalizedPricing,
+      );
+
+      setHostels((currentHostels) =>
+        currentHostels.map((entry) =>
+          entry.hostel_id === hostel.hostel_id
+            ? {
+                ...entry,
+                pricing: updatedPricing,
+              }
+            : entry,
+        ),
+      );
+      toast.success("Pricing updated", { id: toastId });
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to update pricing"), {
+        id: toastId,
+      });
+    } finally {
+      setPricingSavingHostelId(null);
     }
   };
 
   const filteredHostels = hostels.filter((hostel) =>
-    `${hostel.hostel_name} ${hostel.gender}`.toLowerCase().includes(searchQuery.toLowerCase())
+    `${hostel.hostel_name} ${hostel.gender}`
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase()),
   );
+
+  const toggleHostelExpansion = (hostelId) => {
+    setExpandedHostelId((currentValue) =>
+      currentValue === hostelId ? null : hostelId,
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#101922] text-slate-200">
@@ -297,6 +587,15 @@ function InventoryConfigPage() {
             <button
               type="button"
               disabled={!canManage}
+              onClick={() => navigate("/admin/room-import")}
+              className="px-5 py-3 bg-white/5 hover:bg-white/10 text-white text-xs font-bold rounded-xl transition-all border border-white/10 cursor-pointer flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <FileUp size={16} /> Upload Rooms
+            </button>
+
+            <button
+              type="button"
+              disabled={!canManage}
               onClick={() => openModal("hostel")}
               className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-emerald-600/20 cursor-pointer flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
@@ -307,85 +606,181 @@ function InventoryConfigPage() {
 
         {!canManage ? (
           <div className="rounded-3xl border border-orange-500/20 bg-orange-500/10 px-6 py-4 text-sm text-orange-200">
-            Inventory write actions are restricted to the main admin. You can still inspect live hostel and room data.
+            Inventory write actions are restricted to the main admin. You can
+            still inspect live hostel and room data.
           </div>
         ) : null}
 
         <div className="space-y-10">
           {isLoading ? (
-            <div className="py-20 text-center text-slate-400">Loading hostel inventory...</div>
+            <div className="py-20 text-center text-slate-400">
+              Loading hostel inventory...
+            </div>
           ) : filteredHostels.length > 0 ? (
-            filteredHostels.map((hostel) => (
-              <section
-                key={hostel.hostel_id}
-                className="bg-[#15202b]/40 border border-white/5 rounded-[40px] overflow-hidden backdrop-blur-xl"
-              >
-                <div className="p-8 border-b border-white/5 bg-white/2 flex flex-col md:flex-row justify-between md:items-center gap-6">
-                  <div className="flex items-center gap-5">
-                    <div className="p-4 bg-emerald-500/10 rounded-2xl text-emerald-500">
-                      <Home size={28} />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-black text-white">{hostel.hostel_name}</h2>
-                      <div className="flex gap-3 mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-tighter flex-wrap">
-                        <span className="bg-white/5 px-2 py-1 rounded">
-                          {hostel.gender}
-                        </span>
-                        <span className="bg-white/5 px-2 py-1 rounded">
-                          {hostel.total_rooms} Total Rooms
-                        </span>
-                        <span className="bg-white/5 px-2 py-1 rounded">
-                          {hostel.available_beds} Beds Free
-                        </span>
-                        <span className="bg-white/5 px-2 py-1 rounded">
-                          Years: {(hostel.allowed_years || []).join(", ")}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      disabled={!canManage}
-                      onClick={() => openModal("room", hostel)}
-                      className="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold border border-white/10 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      Add Room
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!canManage}
-                      onClick={() => handleDeleteHostel(hostel)}
-                      className="p-2.5 bg-red-500/5 hover:bg-red-500/10 text-red-500 rounded-xl transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </div>
+            filteredHostels.map((hostel) => {
+              const isExpanded = expandedHostelId === hostel.hostel_id;
 
-                <div className="p-8 space-y-8">
-                  {hostel.rooms.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {hostel.rooms.map((room) => (
-                        <RoomCard
-                          key={room._id || room.room_number}
-                          canManage={canManage}
-                          onDelete={(roomToDelete) => handleDeleteRoom(hostel, roomToDelete)}
-                          room={room}
-                        />
-                      ))}
+              return (
+                <section
+                  key={hostel.hostel_id}
+                  className="bg-[#15202b]/40 border border-white/5 rounded-[40px] overflow-hidden backdrop-blur-xl"
+                >
+                  <div className="p-8 border-b border-white/5 bg-white/2 flex flex-col lg:flex-row justify-between lg:items-center gap-6">
+                    <button
+                      type="button"
+                      onClick={() => toggleHostelExpansion(hostel.hostel_id)}
+                      className="text-left flex items-center gap-5 cursor-pointer group"
+                    >
+                      <div className="p-4 bg-emerald-500/10 rounded-2xl text-emerald-500">
+                        <Home size={28} />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-black text-white inline-flex items-center gap-3">
+                          {hostel.hostel_name}
+                          <ChevronDown
+                            size={18}
+                            className={`text-slate-400 transition-transform ${
+                              isExpanded ? "rotate-180" : ""
+                            }`}
+                          />
+                        </h2>
+                        <div className="flex gap-3 mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-tighter flex-wrap">
+                          <span className="bg-white/5 px-2 py-1 rounded">
+                            {hostel.gender}
+                          </span>
+                          <span className="bg-white/5 px-2 py-1 rounded">
+                            {hostel.total_rooms} Total Rooms
+                          </span>
+                          <span className="bg-white/5 px-2 py-1 rounded">
+                            {hostel.floors ?? 1} Floors
+                          </span>
+                          <span className="bg-white/5 px-2 py-1 rounded">
+                            {hostel.available_beds} Beds Free
+                          </span>
+                          <span className="bg-white/5 px-2 py-1 rounded">
+                            Years: {(hostel.allowed_years || []).join(", ")}
+                          </span>
+                          <span className="bg-emerald-500/10 text-emerald-300 px-2 py-1 rounded">
+                            {isExpanded ? "Hide Rooms" : "Show Rooms"}
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        disabled={!canManage}
+                        onClick={() => openModal("hostel-edit", hostel)}
+                        className="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold border border-white/10 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        Edit Hostel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!canManage}
+                        onClick={() => openModal("room", hostel)}
+                        className="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold border border-white/10 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        Add Room
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!canManage}
+                        onClick={() => handleDeleteHostel(hostel)}
+                        className="p-2.5 bg-red-500/5 hover:bg-red-500/10 text-red-500 rounded-xl transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        <Trash2 size={18} />
+                      </button>
                     </div>
-                  ) : (
-                    <div className="py-10 text-center border border-dashed border-white/10 rounded-3xl text-slate-500">
-                      No rooms configured yet for this hostel.
+                  </div>
+
+                  {isExpanded ? (
+                    <div className="p-8 space-y-8">
+                      <div className="bg-black/20 border border-white/5 rounded-3xl p-6 space-y-5">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <h4 className="text-sm font-black uppercase tracking-[0.2em] text-emerald-400">
+                              Room Category Pricing
+                            </h4>
+                            <p className="text-xs text-slate-500 mt-1">
+                              Set fee for each room category ({hostel.hostel_name}).
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={
+                              !canManage || pricingSavingHostelId === hostel.hostel_id
+                            }
+                            onClick={() => handleSaveHostelPricing(hostel)}
+                            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            {pricingSavingHostelId === hostel.hostel_id
+                              ? "Saving..."
+                              : "Save Pricing"}
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {getNormalizedPricing(hostel.pricing || []).map((category) => (
+                            <div
+                              key={`${category.capacity}_${category.ac_type}`}
+                              className="rounded-2xl border border-white/10 bg-black/30 p-4 space-y-2"
+                            >
+                              <p className="text-xs font-bold text-white">{category.label}</p>
+                              <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/40 px-3 py-2">
+                                <span className="text-xs font-bold text-slate-400">Rs.</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  disabled={!canManage}
+                                  value={category.price}
+                                  onChange={(event) =>
+                                    handlePricingInputChange(
+                                      hostel.hostel_id,
+                                      category.capacity,
+                                      category.ac_type,
+                                      event.target.value,
+                                    )
+                                  }
+                                  className="w-full bg-transparent text-sm text-white focus:outline-none disabled:text-slate-500"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {hostel.rooms.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                          {hostel.rooms.map((room) => (
+                            <RoomCard
+                              key={room._id || room.room_number}
+                              canManage={canManage}
+                              onEdit={(roomToEdit) =>
+                                openModal("room-edit", hostel, roomToEdit)
+                              }
+                              onDelete={(roomToDelete) =>
+                                handleDeleteRoom(hostel, roomToDelete)
+                              }
+                              room={room}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-10 text-center border border-dashed border-white/10 rounded-3xl text-slate-500">
+                          No rooms configured yet for this hostel.
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </section>
-            ))
+                  ) : null}
+                </section>
+              );
+            })
           ) : (
             <div className="py-20 text-center border-2 border-dashed border-white/10 rounded-[40px]">
-              <p className="text-slate-500 text-sm font-medium">No hostels match your search.</p>
+              <p className="text-slate-500 text-sm font-medium">
+                No hostels match your search.
+              </p>
             </div>
           )}
         </div>
@@ -396,15 +791,25 @@ function InventoryConfigPage() {
           <div className="bg-[#15202b] border border-white/10 w-full max-w-md rounded-[40px] shadow-2xl p-10 space-y-6 text-left">
             <div className="flex items-center justify-between gap-4">
               <h2 className="text-2xl font-black text-white">
-                {modalType === "hostel" ? "Add Hostel" : `Add Room to ${activeHostel?.hostel_name}`}
+                {modalType === "hostel"
+                  ? "Add Hostel"
+                  : modalType === "hostel-edit"
+                    ? `Edit ${activeHostel?.hostel_name}`
+                    : modalType === "room-edit"
+                      ? `Edit Room ${activeRoom?.room_number}`
+                      : `Add Room to ${activeHostel?.hostel_name}`}
               </h2>
-              <button type="button" onClick={closeModal} className="text-slate-500 hover:text-white">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="text-slate-500 hover:text-white"
+              >
                 <X size={18} />
               </button>
             </div>
 
             <div className="space-y-5">
-              {modalType === "hostel" ? (
+              {modalType === "hostel" || modalType === "hostel-edit" ? (
                 <>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
@@ -444,11 +849,30 @@ function InventoryConfigPage() {
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+                      Number of Floors
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-emerald-500"
+                      value={formData.floors}
+                      onChange={(event) =>
+                        setFormData((currentValue) => ({
+                          ...currentValue,
+                          floors: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
                       Allowed Years
                     </label>
                     <div className="grid grid-cols-2 gap-3">
                       {STUDENT_YEARS.map((year) => {
-                        const isSelected = formData.allowed_years.includes(year);
+                        const isSelected =
+                          formData.allowed_years.includes(year);
 
                         return (
                           <button
@@ -478,6 +902,7 @@ function InventoryConfigPage() {
                       className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-emerald-500"
                       placeholder="e.g. 101"
                       value={formData.room_number}
+                      readOnly={modalType === "room-edit"}
                       onChange={(event) =>
                         setFormData((currentValue) => ({
                           ...currentValue,
@@ -485,9 +910,32 @@ function InventoryConfigPage() {
                         }))
                       }
                     />
+                    {modalType === "room-edit" ? (
+                      <p className="text-[10px] text-slate-500">
+                        Room number cannot be changed.
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+                        Floor
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max={Math.max((activeHostel?.floors ?? 1) - 1, 0)}
+                        className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-emerald-500"
+                        value={formData.floor}
+                        onChange={(event) =>
+                          setFormData((currentValue) => ({
+                            ...currentValue,
+                            floor: event.target.value,
+                          }))
+                        }
+                      />
+                    </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
                         Capacity
@@ -506,24 +954,24 @@ function InventoryConfigPage() {
                         }
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
-                        AC Type
-                      </label>
-                      <select
-                        className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-emerald-500"
-                        value={formData.ac_type ? "true" : "false"}
-                        onChange={(event) =>
-                          setFormData((currentValue) => ({
-                            ...currentValue,
-                            ac_type: event.target.value === "true",
-                          }))
-                        }
-                      >
-                        <option value="false">Non-AC</option>
-                        <option value="true">AC</option>
-                      </select>
-                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase ml-1">
+                      AC Type
+                    </label>
+                    <select
+                      className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-emerald-500"
+                      value={formData.ac_type ? "true" : "false"}
+                      onChange={(event) =>
+                        setFormData((currentValue) => ({
+                          ...currentValue,
+                          ac_type: event.target.value === "true",
+                        }))
+                      }
+                    >
+                      <option value="false">Non-AC</option>
+                      <option value="true">AC</option>
+                    </select>
                   </div>
                 </>
               )}
@@ -540,10 +988,22 @@ function InventoryConfigPage() {
               <button
                 type="button"
                 disabled={isSaving}
-                onClick={modalType === "hostel" ? handleSaveHostel : handleSaveRoom}
+                onClick={
+                  modalType === "hostel"
+                    ? handleSaveHostel
+                    : modalType === "hostel-edit"
+                      ? handleUpdateHostel
+                      : modalType === "room-edit"
+                        ? handleUpdateRoom
+                        : handleSaveRoom
+                }
                 className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-500 rounded-2xl text-xs font-black text-white transition-all cursor-pointer shadow-lg shadow-emerald-500/20 disabled:opacity-60"
               >
-                {isSaving ? "Saving..." : "Save Inventory"}
+                {isSaving
+                  ? "Saving..."
+                  : modalType === "hostel" || modalType === "room"
+                    ? "Save Inventory"
+                    : "Update Inventory"}
               </button>
             </div>
           </div>

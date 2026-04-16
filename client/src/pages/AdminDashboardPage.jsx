@@ -22,22 +22,36 @@ import { getErrorMessage } from "../lib/errors";
 
 const StatMini = ({ label, value, tone = "text-emerald-500" }) => (
   <div className="px-6 py-4 rounded-2xl bg-[#15202b]/60 border border-white/5 text-right backdrop-blur-md">
-    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{label}</p>
+    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">
+      {label}
+    </p>
     <p className={`text-2xl font-bold tracking-tighter ${tone}`}>{value}</p>
   </div>
 );
 
-const ActionCard = ({ colorClass, description, icon: Icon, onClick, title }) => (
+const ActionCard = ({
+  colorClass,
+  description,
+  icon: Icon,
+  onClick,
+  title,
+}) => (
   <button
     type="button"
     onClick={onClick}
     className="text-left bg-[#15202b]/40 border border-white/5 p-8 rounded-4xl backdrop-blur-md hover:bg-[#15202b]/60 transition-all group cursor-pointer hover:-translate-y-1 shadow-xl"
   >
-    <div className={`p-4 rounded-2xl bg-white/5 w-fit mb-8 group-hover:scale-110 transition-transform ${colorClass}`}>
+    <div
+      className={`p-4 rounded-2xl bg-white/5 w-fit mb-8 group-hover:scale-110 transition-transform ${colorClass}`}
+    >
       <Icon size={24} />
     </div>
-    <h3 className="text-xl font-bold text-white mb-2 tracking-tight">{title}</h3>
-    <p className="text-xs text-slate-500 font-medium leading-relaxed">{description}</p>
+    <h3 className="text-xl font-bold text-white mb-2 tracking-tight">
+      {title}
+    </h3>
+    <p className="text-xs text-slate-500 font-medium leading-relaxed">
+      {description}
+    </p>
   </button>
 );
 
@@ -53,6 +67,7 @@ function AdminDashboardPage() {
   const [bookingWindowOpen, setBookingWindowOpen] = useState(false);
   const [hostels, setHostels] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [eligibleStudentsCount, setEligibleStudentsCount] = useState(0);
 
   const isMainAdmin = user?.role === "mainadmin";
 
@@ -60,15 +75,27 @@ function AdminDashboardPage() {
     setIsLoading(true);
 
     try {
-      const [hostelsResponse, bookingsResponse, bookingWindowResponse] = await Promise.all([
+      const [
+        hostelsResponse,
+        bookingsResponse,
+        bookingWindowResponse,
+        eligibleStudentsResponse,
+      ] = await Promise.all([
         axiosInstance.get("/admin/hostels"),
         axiosInstance.get("/admin/bookings"),
         axiosInstance.get("/admin/booking-window"),
+        axiosInstance.get("/admin/eligible-students"),
       ]);
 
       setHostels(hostelsResponse.data?.data?.hostels || []);
       setBookings(bookingsResponse.data?.data?.bookings || []);
-      setBookingWindowOpen(Boolean(bookingWindowResponse.data?.data?.booking_window_open));
+      setBookingWindowOpen(
+        Boolean(bookingWindowResponse.data?.data?.booking_window_open),
+      );
+      setEligibleStudentsCount(
+        Number(eligibleStudentsResponse.data?.data?.count) ||
+          (eligibleStudentsResponse.data?.data?.students || []).length,
+      );
     } catch (error) {
       toast.error(getErrorMessage(error, "Unable to load admin dashboard"));
     } finally {
@@ -89,7 +116,9 @@ function AdminDashboardPage() {
 
   const handleToggleBookingWindow = async (nextState) => {
     setIsUpdatingWindow(true);
-    const toastId = toast.loading(`Turning booking window ${nextState ? "on" : "off"}...`);
+    const toastId = toast.loading(
+      `Turning booking window ${nextState ? "on" : "off"}...`,
+    );
 
     try {
       const response = await axiosInstance.patch("/admin/booking-window", {
@@ -97,9 +126,12 @@ function AdminDashboardPage() {
       });
 
       setBookingWindowOpen(Boolean(response.data?.data?.booking_window_open));
-      toast.success(`Booking window ${nextState ? "opened" : "closed"} successfully`, {
-        id: toastId,
-      });
+      toast.success(
+        `Booking window ${nextState ? "opened" : "closed"} successfully`,
+        {
+          id: toastId,
+        },
+      );
     } catch (error) {
       toast.error(getErrorMessage(error, "Unable to update booking window"), {
         id: toastId,
@@ -113,7 +145,7 @@ function AdminDashboardPage() {
   const pendingBookings = countByStatus(bookings, "PENDING");
   const availableBeds = hostels.reduce(
     (totalBeds, hostel) => totalBeds + (hostel.available_beds || 0),
-    0
+    0,
   );
 
   return (
@@ -148,9 +180,20 @@ function AdminDashboardPage() {
           </div>
 
           <div className="flex gap-4 flex-wrap">
-            <StatMini label="Confirmed Bookings" value={isLoading ? "..." : confirmedBookings} />
-            <StatMini label="Pending Holds" value={isLoading ? "..." : pendingBookings} tone="text-orange-400" />
-            <StatMini label="Available Beds" value={isLoading ? "..." : availableBeds} tone="text-blue-400" />
+            <StatMini
+              label="Confirmed Bookings"
+              value={isLoading ? "..." : confirmedBookings}
+            />
+            <StatMini
+              label="Pending Holds"
+              value={isLoading ? "..." : pendingBookings}
+              tone="text-orange-400"
+            />
+            <StatMini
+              label="Available Beds"
+              value={isLoading ? "..." : availableBeds}
+              tone="text-blue-400"
+            />
           </div>
         </header>
 
@@ -163,8 +206,9 @@ function AdminDashboardPage() {
 
         {!isMainAdmin ? (
           <div className="rounded-3xl border border-orange-500/20 bg-orange-500/10 px-6 py-4 text-sm text-orange-200">
-            Your current role is <span className="font-bold">{user?.role}</span>. Only the
-            main admin can change booking window state or reset the system.
+            Your current role is <span className="font-bold">{user?.role}</span>
+            . Only the main admin can change booking window state or reset the
+            system.
           </div>
         ) : null}
 
@@ -209,26 +253,31 @@ function AdminDashboardPage() {
                   </div>
                   <div>
                     <h4 className="font-bold text-xl text-white tracking-tight">
-                      Booking Allotment Master
+                      Eligible Hostel Students
                     </h4>
                     <p className="text-xs text-slate-500 mt-1">
-                      {confirmedBookings} confirmed allocations and {pendingBookings} active holds currently in the system.
+                      {isLoading
+                        ? "Loading eligible students..."
+                        : `${eligibleStudentsCount} hostler students currently eligible in the system.`}
                     </p>
                   </div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => navigateTo("/admin/confirmed-bookings")}
+                  onClick={() => navigateTo("/admin/application-registry")}
                   className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
                 >
-                  Open Registry
+                  Open Student List
                 </button>
               </div>
             </AnimatedBorder>
           </div>
 
           <div className="lg:col-span-4">
-            <ResetSystemAction disabled={!isMainAdmin} onSuccess={loadDashboard} />
+            <ResetSystemAction
+              disabled={!isMainAdmin}
+              onSuccess={loadDashboard}
+            />
           </div>
         </div>
 
@@ -237,13 +286,17 @@ function AdminDashboardPage() {
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
               Total Hostels
             </p>
-            <p className="text-3xl font-black text-white mt-3">{isLoading ? "..." : hostels.length}</p>
+            <p className="text-3xl font-black text-white mt-3">
+              {isLoading ? "..." : hostels.length}
+            </p>
           </div>
           <div className="bg-[#15202b]/40 border border-white/5 rounded-3xl p-6">
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
               Booking Window
             </p>
-            <p className={`text-3xl font-black mt-3 ${bookingWindowOpen ? "text-emerald-400" : "text-red-400"}`}>
+            <p
+              className={`text-3xl font-black mt-3 ${bookingWindowOpen ? "text-emerald-400" : "text-red-400"}`}
+            >
               {bookingWindowOpen ? "Open" : "Closed"}
             </p>
           </div>

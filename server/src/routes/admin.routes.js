@@ -5,6 +5,7 @@ import {
     createHostel,
     deleteHostel,
     createOfflineBookingController,
+    getHostelPricing,
     listEligibleStudents,
     listBookings,
     getBookingWindowStatus,
@@ -13,6 +14,7 @@ import {
     resetSessionData,
     updateBookingWindow,
     updateHostel,
+    updateHostelPricing,
 } from "../controllers/admin.controller.js";
 import {
     createRoom,
@@ -40,6 +42,7 @@ router.get("/hostels", listHostels);
 router.get("/bookings", listBookings);
 router.get("/eligible-students", listEligibleStudents);
 router.get("/hostels/:hostelId/rooms", getRoomsByHostel);
+router.get("/hostels/:hostelId/pricing", getHostelPricing);
 router.get("/booking-window", getBookingWindowStatus);
 router.post("/offline-bookings", createOfflineBookingController);
 
@@ -57,6 +60,11 @@ router.delete(
     "/hostels/:hostelId",
     authorizeAdminRoles(ADMIN_ROLES.MAINADMIN),
     deleteHostel
+);
+router.put(
+    "/hostels/:hostelId/pricing",
+    authorizeAdminRoles(ADMIN_ROLES.MAINADMIN),
+    updateHostelPricing
 );
 router.put(
     "/hostels/:hostelId/allowed-years",

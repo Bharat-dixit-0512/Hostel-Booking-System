@@ -5,6 +5,7 @@ import {
   Building2,
   ChevronLeft,
   DoorOpen,
+  Layers,
   Snowflake,
   Users,
 } from "lucide-react";
@@ -16,6 +17,7 @@ import axiosInstance from "../lib/axios";
 import { getErrorMessage } from "../lib/errors";
 
 const ACTIVE_BOOKING_STATUSES = new Set(["PENDING", "CONFIRMED"]);
+const formatCurrency = (value) => `Rs. ${Number(value ?? 0).toLocaleString("en-IN")}`;
 
 const HostelSummaryCard = ({ hostel, onSelect }) => (
   <button
@@ -32,24 +34,40 @@ const HostelSummaryCard = ({ hostel, onSelect }) => (
           {hostel.hostel_name}
         </h3>
         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">
-          {hostel.available_beds} beds free / {hostel.total_capacity} total capacity
+          {hostel.available_beds} beds free / {hostel.total_capacity} total
+          capacity
         </p>
       </div>
-      <div className="grid grid-cols-2 gap-3 text-xs text-slate-400">
+      <div className="grid grid-cols-3 gap-3 text-xs text-slate-400">
         <div className="rounded-2xl bg-black/20 px-4 py-3 border border-white/5">
-          <p className="text-[10px] font-black uppercase text-slate-500">Rooms</p>
+          <p className="text-[10px] font-black uppercase text-slate-500">
+            Rooms
+          </p>
           <p className="font-bold text-white mt-1">{hostel.total_rooms}</p>
         </div>
         <div className="rounded-2xl bg-black/20 px-4 py-3 border border-white/5">
-          <p className="text-[10px] font-black uppercase text-slate-500">Availability</p>
-          <p className="font-bold text-white mt-1">{hostel.can_book ? "Open" : "Full"}</p>
+          <p className="text-[10px] font-black uppercase text-slate-500">
+            Floors
+          </p>
+          <p className="font-bold text-white mt-1">{hostel.floors ?? 1}</p>
+        </div>
+        <div className="rounded-2xl bg-black/20 px-4 py-3 border border-white/5">
+          <p className="text-[10px] font-black uppercase text-slate-500">
+            Availability
+          </p>
+          <p className="font-bold text-white mt-1">
+            {hostel.can_book ? "Open" : "Full"}
+          </p>
         </div>
       </div>
       <div className="flex items-center justify-between pt-4 border-t border-white/5">
         <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
           {hostel.can_book ? "Available for booking" : "No vacancies"}
         </span>
-        <ArrowRight size={18} className="text-[#137fec] group-hover:translate-x-2 transition-transform" />
+        <ArrowRight
+          size={18}
+          className="text-[#137fec] group-hover:translate-x-2 transition-transform"
+        />
       </div>
     </div>
   </button>
@@ -74,9 +92,14 @@ const RoomCard = ({ room, isSelected, onSelect }) => (
           <DoorOpen size={18} />
         </div>
         <div>
-          <h4 className="text-lg font-bold text-white tracking-tight">Room {room.room_number}</h4>
+          <h4 className="text-lg font-bold text-white tracking-tight">
+            Room {room.room_number}
+          </h4>
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">
             {room.ac_type ? "AC" : "Non-AC"}
+          </p>
+          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mt-1 inline-flex items-center gap-1">
+            <Layers size={12} /> Floor {room.floor ?? 0}
           </p>
         </div>
       </div>
@@ -85,18 +108,28 @@ const RoomCard = ({ room, isSelected, onSelect }) => (
 
     <div className="grid grid-cols-2 gap-3">
       <div className="rounded-2xl bg-black/30 px-4 py-3 border border-white/5">
-        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Capacity</p>
+        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+          Capacity
+        </p>
         <p className="text-white font-bold mt-1 flex items-center gap-2">
           <Users size={14} className="text-slate-400" />
           {room.capacity}
         </p>
       </div>
       <div className="rounded-2xl bg-black/30 px-4 py-3 border border-white/5">
-        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Available</p>
+        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+          Available
+        </p>
         <p className="text-white font-bold mt-1 flex items-center gap-2">
           <BedDouble size={14} className="text-emerald-400" />
           {room.available_beds}
         </p>
+      </div>
+      <div className="rounded-2xl bg-black/30 px-4 py-3 border border-white/5 col-span-2">
+        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+          Price
+        </p>
+        <p className="text-white font-bold mt-1">{formatCurrency(room.price)}</p>
       </div>
     </div>
   </button>
@@ -131,7 +164,9 @@ function BrowseHostelsPage() {
         }
 
         setHostels(hostelsResponse.data?.data?.hostels || []);
-        setBookingWindowOpen(Boolean(hostelsResponse.data?.data?.booking_window_open));
+        setBookingWindowOpen(
+          Boolean(hostelsResponse.data?.data?.booking_window_open),
+        );
         setBookings(bookingsResponse.data?.data?.bookings || []);
       } catch (error) {
         if (isMounted) {
@@ -151,9 +186,13 @@ function BrowseHostelsPage() {
     };
   }, []);
 
-  const pendingBooking = bookings.find((booking) => booking.status === "PENDING") || null;
-  const confirmedBooking = bookings.find((booking) => booking.status === "CONFIRMED") || null;
-  const activeBooking = bookings.find((booking) => ACTIVE_BOOKING_STATUSES.has(booking.status)) || null;
+  const pendingBooking =
+    bookings.find((booking) => booking.status === "PENDING") || null;
+  const confirmedBooking =
+    bookings.find((booking) => booking.status === "CONFIRMED") || null;
+  const activeBooking =
+    bookings.find((booking) => ACTIVE_BOOKING_STATUSES.has(booking.status)) ||
+    null;
 
   const handleHostelSelect = async (hostel) => {
     setSelectedHostel(hostel);
@@ -161,7 +200,9 @@ function BrowseHostelsPage() {
     setIsLoadingRooms(true);
 
     try {
-      const response = await axiosInstance.get(`/hostels/${hostel.hostel_id}/rooms`);
+      const response = await axiosInstance.get(
+        `/hostels/${hostel.hostel_id}/rooms`,
+      );
 
       setRooms(response.data?.data?.rooms || []);
     } catch (error) {
@@ -206,7 +247,9 @@ function BrowseHostelsPage() {
         },
       });
     } catch (error) {
-      toast.error(getErrorMessage(error, "Unable to create booking"), { id: toastId });
+      toast.error(getErrorMessage(error, "Unable to create booking"), {
+        id: toastId,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -224,10 +267,17 @@ function BrowseHostelsPage() {
                 Active Booking Detected
               </p>
               <h2 className="text-xl font-black text-white">
-                Room {activeBooking.room_number} / Hostel #{activeBooking.hostel_id}
+                Room {activeBooking.room_number} / Hostel #
+                {activeBooking.hostel_id}
               </h2>
               <p className="text-sm text-slate-400 mt-2">
-                Status: <span className="text-white font-bold">{activeBooking.status}</span>
+                Status:{" "}
+                <span className="text-white font-bold">
+                  {activeBooking.status}
+                </span>
+              </p>
+              <p className="text-sm text-slate-400 mt-1">
+                Amount: <span className="text-white font-bold">{formatCurrency(activeBooking.price)}</span>
               </p>
             </div>
             <button
@@ -236,12 +286,14 @@ function BrowseHostelsPage() {
                 navigate(
                   activeBooking.status === "PENDING"
                     ? `/student/payment?bookingId=${activeBooking._id}`
-                    : "/student/profile"
+                    : "/student/profile",
                 )
               }
               className="px-6 py-3 bg-[#137fec] hover:bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer"
             >
-              {activeBooking.status === "PENDING" ? "Continue Payment" : "View Allocation"}
+              {activeBooking.status === "PENDING"
+                ? "Continue Payment"
+                : "View Allocation"}
             </button>
           </section>
         ) : null}
@@ -251,7 +303,8 @@ function BrowseHostelsPage() {
             Eligible Hostels
           </h1>
           <p className="text-slate-500 text-sm">
-            Browse live availability pulled from the backend. The current API books a room hold, not an individual bed selection.
+            Browse live availability pulled from the backend. The current API
+            books a room hold, not an individual bed selection.
           </p>
           <div
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${
@@ -260,14 +313,20 @@ function BrowseHostelsPage() {
                 : "bg-red-500/10 border border-red-500/20 text-red-500"
             }`}
           >
-            <span>{bookingWindowOpen ? "Booking window open" : "Booking window closed"}</span>
+            <span>
+              {bookingWindowOpen
+                ? "Booking window open"
+                : "Booking window closed"}
+            </span>
           </div>
         </header>
 
         {!selectedHostel ? (
           <section>
             {isLoadingHostels ? (
-              <div className="py-20 text-center text-slate-400">Loading eligible hostels...</div>
+              <div className="py-20 text-center text-slate-400">
+                Loading eligible hostels...
+              </div>
             ) : hostels.length === 0 ? (
               <div className="py-20 text-center border border-dashed border-white/10 rounded-[40px] text-slate-500">
                 No eligible hostels are available for your profile right now.
@@ -302,14 +361,18 @@ function BrowseHostelsPage() {
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
                   Selected Hostel
                 </p>
-                <h2 className="text-xl font-black text-white">{selectedHostel.hostel_name}</h2>
+                <h2 className="text-xl font-black text-white">
+                  {selectedHostel.hostel_name}
+                </h2>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
               <div className="lg:col-span-8 space-y-6">
                 {isLoadingRooms ? (
-                  <div className="py-16 text-center text-slate-400">Loading hostel rooms...</div>
+                  <div className="py-16 text-center text-slate-400">
+                    Loading hostel rooms...
+                  </div>
                 ) : rooms.length === 0 ? (
                   <div className="py-16 text-center border border-dashed border-white/10 rounded-[40px] text-slate-500">
                     No rooms are configured for this hostel yet.
@@ -320,7 +383,9 @@ function BrowseHostelsPage() {
                       <RoomCard
                         key={room._id || room.room_number}
                         room={room}
-                        isSelected={selectedRoom?.room_number === room.room_number}
+                        isSelected={
+                          selectedRoom?.room_number === room.room_number
+                        }
                         onSelect={setSelectedRoom}
                       />
                     ))}
@@ -334,26 +399,46 @@ function BrowseHostelsPage() {
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
                       Summary
                     </p>
-                    <h3 className="text-xl font-bold text-white">{selectedHostel.hostel_name}</h3>
+                    <h3 className="text-xl font-bold text-white">
+                      {selectedHostel.hostel_name}
+                    </h3>
                   </div>
 
                   <div className="space-y-4">
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-slate-500 font-medium">Room</span>
                       <span className="font-bold text-slate-300">
-                        {selectedRoom ? `Room ${selectedRoom.room_number}` : "Not Selected"}
+                        {selectedRoom
+                          ? `Room ${selectedRoom.room_number}`
+                          : "Not Selected"}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-slate-500 font-medium">Capacity</span>
+                      <span className="text-slate-500 font-medium">
+                        Capacity
+                      </span>
                       <span className="font-bold text-slate-300">
                         {selectedRoom?.capacity ?? "--"}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-slate-500 font-medium">Available Beds</span>
+                      <span className="text-slate-500 font-medium">Floor</span>
+                      <span className="font-bold text-slate-300">
+                        {selectedRoom?.floor ?? "--"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-500 font-medium">
+                        Available Beds
+                      </span>
                       <span className="font-bold text-emerald-500">
                         {selectedRoom?.available_beds ?? "--"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-500 font-medium">Price</span>
+                      <span className="font-bold text-slate-300">
+                        {selectedRoom ? formatCurrency(selectedRoom.price) : "--"}
                       </span>
                     </div>
                   </div>
@@ -362,10 +447,14 @@ function BrowseHostelsPage() {
                     <button
                       type="button"
                       onClick={handleProceedToPayment}
-                      disabled={isSubmitting || !bookingWindowOpen || isLoadingRooms}
+                      disabled={
+                        isSubmitting || !bookingWindowOpen || isLoadingRooms
+                      }
                       className="w-full py-5 bg-[#137fec] hover:bg-blue-600 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-black text-xs uppercase tracking-widest rounded-3xl transition-all shadow-xl shadow-[#137fec]/20 flex items-center justify-center gap-3 cursor-pointer active:scale-95"
                     >
-                      {pendingBooking ? "Continue Payment" : "Hold Room & Continue"}
+                      {pendingBooking
+                        ? "Continue Payment"
+                        : "Hold Room & Continue"}
                       <ArrowRight size={16} />
                     </button>
                   </div>

@@ -17,6 +17,7 @@ import { getErrorMessage } from "../lib/errors";
 
 const getHostelName = (hostels, hostelId) =>
   hostels.find((hostel) => hostel.hostel_id === hostelId)?.hostel_name || `Hostel #${hostelId}`;
+const formatCurrency = (value) => `Rs. ${Number(value ?? 0).toLocaleString("en-IN")}`;
 
 function PaymentPage() {
   const navigate = useNavigate();
@@ -190,6 +191,7 @@ function PaymentPage() {
             <p className="text-xs text-slate-400">
               Payment Ref: {booking.payment_reference || "Not provided"}
             </p>
+            <p className="text-xs text-slate-400">Amount: {formatCurrency(booking.price)}</p>
           </div>
           <div className="pt-6 flex flex-col gap-3">
             <button
@@ -293,6 +295,12 @@ function PaymentPage() {
               <div className="flex justify-between text-xs">
                 <span className="text-slate-500 font-medium">Status</span>
                 <span className="text-orange-400 font-bold">{booking.status}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-500 font-medium">Amount</span>
+                <span className="text-white font-bold">
+                  {formatCurrency(sessionData?.amount ?? booking.price)}
+                </span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-slate-500 font-medium">Expires At</span>

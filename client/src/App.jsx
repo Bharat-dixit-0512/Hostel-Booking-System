@@ -17,8 +17,10 @@ import InventoryConfigPage from "./pages/InventoryConfig.jsx";
 import LoginPage from "./pages/LoginPage";
 import ManualBookingPage from "./pages/ManualBookingPage.jsx";
 import PaymentPage from "./pages/PaymentPage.jsx";
+import RoomImportPage from "./pages/RoomImportPage.jsx";
 import RoomSwapDashboard from "./pages/RoomSwapDashboard.jsx";
 import AdminSwapApprovalPage from "./pages/SwapApprovalPage.jsx";
+import BookingHistoryPage from "./pages/BookingHistoryPage.jsx";
 import StudentDashboardPage from "./pages/StudentDashboardPage.jsx";
 import StudentProfile from "./pages/StudentProfile.jsx";
 
@@ -86,6 +88,14 @@ function App() {
             element={
               <ProtectedRoute allowedLoginTypes={["admin"]}>
                 <InventoryConfigPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/room-import"
+            element={
+              <ProtectedRoute allowedLoginTypes={["admin"]}>
+                <RoomImportPage />
               </ProtectedRoute>
             }
           />
@@ -159,6 +169,14 @@ function App() {
             element={
               <ProtectedRoute allowedLoginTypes={["student"]}>
                 <PaymentPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/booking-history"
+            element={
+              <ProtectedRoute allowedLoginTypes={["student"]}>
+                <BookingHistoryPage />
               </ProtectedRoute>
             }
           />

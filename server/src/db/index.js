@@ -8,6 +8,7 @@ import registerBookingWindowModel from "../models/bookingWindow.model.js";
 import registerCounterModel from "../models/counter.model.js";
 import registerHostelAllowedYearModel from "../models/hostelAllowedYear.model.js";
 import registerHostelModel from "../models/hostel.model.js";
+import registerHostelRoomPricingModel from "../models/hostelRoomPricing.model.js";
 import registerHostelStudentModel from "../models/hostelStudent.model.js";
 import registerRoomModel from "../models/room.model.js";
 
@@ -46,6 +47,7 @@ const registerModels = () => {
         counter: registerCounterModel(hostelConnection),
         hostel: registerHostelModel(hostelConnection),
         hostelAllowedYear: registerHostelAllowedYearModel(hostelConnection),
+        hostelRoomPricing: registerHostelRoomPricingModel(hostelConnection),
         hostelStudent: registerHostelStudentModel(hostelConnection),
         room: registerRoomModel(hostelConnection),
     };
@@ -121,6 +123,11 @@ export const getHostelModel = () => {
 export const getHostelAllowedYearModel = () => {
     ensureModelsReady();
     return registeredModels.hostelAllowedYear;
+};
+
+export const getHostelRoomPricingModel = () => {
+    ensureModelsReady();
+    return registeredModels.hostelRoomPricing;
 };
 
 export const getHostelStudentModel = () => {

@@ -5,6 +5,7 @@ import {
   CircleUserRound,
   CreditCard,
   DoorOpen,
+  History,
   LayoutDashboard,
   ShieldCheck,
 } from "lucide-react";
@@ -18,13 +19,22 @@ import { getErrorMessage } from "../lib/errors";
 
 const ACTIVE_BOOKING_STATUSES = new Set(["PENDING", "CONFIRMED"]);
 
-const DashboardCard = ({ badge, colorClass, description, icon: Icon, onClick, title }) => (
+const DashboardCard = ({
+  badge,
+  colorClass,
+  description,
+  icon: Icon,
+  onClick,
+  title,
+}) => (
   <button
     type="button"
     onClick={onClick}
     className="group text-left relative bg-[#15202b]/40 border border-white/5 p-8 rounded-4xl backdrop-blur-md hover:bg-[#15202b]/60 transition-all cursor-pointer shadow-xl overflow-hidden w-full"
   >
-    <div className={`absolute -top-4 -right-4 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity ${colorClass}`}>
+    <div
+      className={`absolute -top-4 -right-4 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity ${colorClass}`}
+    >
       <Icon size={120} />
     </div>
 
@@ -69,13 +79,20 @@ const SummaryTile = ({ icon: Icon, label, value }) => (
 );
 
 const formatStatusLabel = (status) =>
-  status ? status.replaceAll("_", " ").toLowerCase().replace(/^\w/, (match) => match.toUpperCase()) : "None";
+  status
+    ? status
+        .replaceAll("_", " ")
+        .toLowerCase()
+        .replace(/^\w/, (match) => match.toUpperCase())
+    : "None";
 
 const getHostelName = (hostels, hostelId) =>
-  hostels.find((hostel) => hostel.hostel_id === hostelId)?.hostel_name || `Hostel #${hostelId}`;
+  hostels.find((hostel) => hostel.hostel_id === hostelId)?.hostel_name ||
+  `Hostel #${hostelId}`;
 
 const getLatestActiveBooking = (bookings) =>
-  bookings.find((booking) => ACTIVE_BOOKING_STATUSES.has(booking.status)) || null;
+  bookings.find((booking) => ACTIVE_BOOKING_STATUSES.has(booking.status)) ||
+  null;
 
 function StudentDashboardPage() {
   const navigate = useNavigate();
@@ -103,7 +120,9 @@ function StudentDashboardPage() {
 
         setBookings(bookingsResponse.data?.data?.bookings || []);
         setHostels(hostelsResponse.data?.data?.hostels || []);
-        setBookingWindowOpen(Boolean(hostelsResponse.data?.data?.booking_window_open));
+        setBookingWindowOpen(
+          Boolean(hostelsResponse.data?.data?.booking_window_open),
+        );
       } catch (error) {
         if (isMounted) {
           toast.error(getErrorMessage(error, "Unable to load dashboard"));
@@ -125,8 +144,10 @@ function StudentDashboardPage() {
   }, [user?.roll_number]);
 
   const latestActiveBooking = getLatestActiveBooking(bookings);
-  const pendingBooking = bookings.find((booking) => booking.status === "PENDING") || null;
-  const confirmedBooking = bookings.find((booking) => booking.status === "CONFIRMED") || null;
+  const pendingBooking =
+    bookings.find((booking) => booking.status === "PENDING") || null;
+  const confirmedBooking =
+    bookings.find((booking) => booking.status === "CONFIRMED") || null;
   const activeHostelName = latestActiveBooking
     ? getHostelName(hostels, latestActiveBooking.hostel_id)
     : "No active booking";
@@ -167,7 +188,8 @@ function StudentDashboardPage() {
               </span>
             </h1>
             <p className="text-slate-500 text-sm font-medium mt-2">
-              Track your live hostel booking, payment hold, and final room allocation.
+              Track your live hostel booking, payment hold, and final room
+              allocation.
             </p>
           </div>
 
@@ -185,9 +207,21 @@ function StudentDashboardPage() {
         </header>
 
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <SummaryTile icon={CircleUserRound} label="Roll Number" value={String(user?.roll_number || "--")} />
-          <SummaryTile icon={DoorOpen} label="Current Status" value={formatStatusLabel(latestActiveBooking?.status)} />
-          <SummaryTile icon={BedDouble} label="Active Hostel" value={activeHostelName} />
+          <SummaryTile
+            icon={CircleUserRound}
+            label="Roll Number"
+            value={String(user?.roll_number || "--")}
+          />
+          <SummaryTile
+            icon={DoorOpen}
+            label="Current Status"
+            value={formatStatusLabel(latestActiveBooking?.status)}
+          />
+          <SummaryTile
+            icon={BedDouble}
+            label="Active Hostel"
+            value={activeHostelName}
+          />
         </section>
 
         <section className="bg-[#15202b]/40 border border-white/5 rounded-[40px] p-8 backdrop-blur-md">
@@ -197,7 +231,9 @@ function StudentDashboardPage() {
                 Live Booking Snapshot
               </p>
               {isLoading ? (
-                <p className="text-sm text-slate-400">Loading current booking state...</p>
+                <p className="text-sm text-slate-400">
+                  Loading current booking state...
+                </p>
               ) : latestActiveBooking ? (
                 <>
                   <h2 className="text-2xl font-black text-white">
@@ -208,14 +244,19 @@ function StudentDashboardPage() {
                     <span className="text-white font-bold">
                       {formatStatusLabel(latestActiveBooking.status)}
                     </span>
-                    {pendingBooking ? " - complete payment before the hold expires." : ""}
+                    {pendingBooking
+                      ? " - complete payment before the hold expires."
+                      : ""}
                   </p>
                 </>
               ) : (
                 <>
-                  <h2 className="text-2xl font-black text-white">No active booking yet</h2>
+                  <h2 className="text-2xl font-black text-white">
+                    No active booking yet
+                  </h2>
                   <p className="text-sm text-slate-400 mt-2">
-                    Browse eligible hostels and place a room on hold when the booking window is open.
+                    Browse eligible hostels and place a room on hold when the
+                    booking window is open.
                   </p>
                 </>
               )}
@@ -226,7 +267,11 @@ function StudentDashboardPage() {
               onClick={handleBookingAction}
               className="px-6 py-3 bg-[#137fec] hover:bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-[#137fec]/20 transition-all cursor-pointer"
             >
-              {pendingBooking ? "Complete Payment" : confirmedBooking ? "View Booking" : "Browse Hostels"}
+              {pendingBooking
+                ? "Complete Payment"
+                : confirmedBooking
+                  ? "View Booking"
+                  : "Browse Hostels"}
             </button>
           </div>
         </section>
@@ -257,21 +302,25 @@ function StudentDashboardPage() {
               icon={DoorOpen}
               onClick={handleBookingAction}
               colorClass="text-emerald-500"
-              badge={pendingBooking ? "Pending Hold" : bookingWindowOpen ? "Window Open" : "Window Closed"}
+              badge={
+                pendingBooking
+                  ? "Pending Hold"
+                  : bookingWindowOpen
+                    ? "Window Open"
+                    : "Window Closed"
+              }
             />
             <DashboardCard
-              title="Payment Status"
-              description="Review the payment session tied to your latest pending or confirmed booking."
-              icon={CreditCard}
-              onClick={() =>
-                navigate(
-                  pendingBooking
-                    ? `/student/payment?bookingId=${pendingBooking._id}`
-                    : "/student/payment"
-                )
+              title="Booking History"
+              description="View all your past and present hostel bookings including payment status and room details."
+              icon={History}
+              onClick={() => navigate("/student/booking-history")}
+              colorClass="text-indigo-500"
+              badge={
+                bookings.length > 0
+                  ? `${bookings.length} Booking${bookings.length > 1 ? "s" : ""}`
+                  : null
               }
-              colorClass="text-purple-500"
-              badge={confirmedBooking ? "Confirmed" : pendingBooking ? "Awaiting Payment" : null}
             />
           </div>
         </section>

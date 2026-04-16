@@ -18,6 +18,10 @@ import {
     startHostelSession,
 } from "../db/index.js";
 import ApiError from "./ApiError.js";
+import {
+    getHostelPricingValueMap,
+    getPricingCategoryKey,
+} from "./hostelPricing.utils.js";
 
 const withSession = (query, session) => (session ? query.session(session) : query);
 const sessionOptions = (session, extraOptions = {}) =>
@@ -228,12 +232,26 @@ export const createPendingStudentBooking = async ({
             throw new ApiError(409, "Room is full or does not exist");
         }
 
+        const pricingMap = await getHostelPricingValueMap(hostelId, session);
+        const pricingCategory = getPricingCategoryKey({
+            capacity: room.capacity,
+            acType: room.ac_type,
+        });
+        const roomPrice = pricingMap.get(pricingCategory);
+
+        if (roomPrice === undefined) {
+            throw new ApiError(409, "Pricing is not configured for the selected room category");
+        }
+
         const [booking] = await Booking.create(
             [
                 {
                     roll_number: rollNumber,
                     hostel_id: hostelId,
                     room_number: roomNumber,
+                    room_capacity: room.capacity,
+                    room_ac_type: room.ac_type,
+                    price: roomPrice,
                     status: BOOKING_STATUSES.PENDING,
                     source: BOOKING_SOURCES.ONLINE,
                     booked_by_type: BOOKED_BY_TYPES.STUDENT,
@@ -298,6 +316,9 @@ export const confirmBookingPayment = async ({
         }
 
         booking.status = BOOKING_STATUSES.CONFIRMED;
+        booking.price = booking.price ?? 0;
+        booking.room_capacity = booking.room_capacity ?? null;
+        booking.room_ac_type = booking.room_ac_type ?? null;
         booking.payment_reference = paymentReference?.trim() || null;
         booking.confirmed_at = getNow();
         booking.expires_at = null;
@@ -351,6 +372,9 @@ export const cancelStudentBooking = async ({ bookingId, rollNumber }) => {
         }
 
         booking.status = BOOKING_STATUSES.CANCELLED;
+        booking.price = booking.price ?? 0;
+        booking.room_capacity = booking.room_capacity ?? null;
+        booking.room_ac_type = booking.room_ac_type ?? null;
         booking.cancelled_at = getNow();
         booking.expires_at = null;
         await booking.save(sessionOptions(session));
@@ -433,12 +457,26 @@ export const createOfflineBooking = async ({
             throw new ApiError(409, "Room is full or does not exist");
         }
 
+        const pricingMap = await getHostelPricingValueMap(hostelId, session);
+        const pricingCategory = getPricingCategoryKey({
+            capacity: room.capacity,
+            acType: room.ac_type,
+        });
+        const roomPrice = pricingMap.get(pricingCategory);
+
+        if (roomPrice === undefined) {
+            throw new ApiError(409, "Pricing is not configured for the selected room category");
+        }
+
         const [booking] = await Booking.create(
             [
                 {
                     roll_number: authStudent.roll_number,
                     hostel_id: hostelId,
                     room_number: roomNumber,
+                    room_capacity: room.capacity,
+                    room_ac_type: room.ac_type,
+                    price: roomPrice,
                     status: BOOKING_STATUSES.CONFIRMED,
                     source: BOOKING_SOURCES.OFFLINE,
                     booked_by_type: BOOKED_BY_TYPES.ADMIN,

@@ -26,6 +26,20 @@ const bookingSchema = new Schema(
             required: true,
             trim: true,
         },
+        room_capacity: {
+            type: Number,
+            default: null,
+        },
+        room_ac_type: {
+            type: Boolean,
+            default: null,
+        },
+        price: {
+            type: Number,
+            required: true,
+            min: 0,
+            default: 0,
+        },
         status: {
             type: String,
             enum: Object.values(BOOKING_STATUSES),

@@ -60,7 +60,9 @@ function ManualBookingPage() {
         setStudents(studentsResponse.data?.data?.students || []);
         setHostels(hostelsResponse.data?.data?.hostels || []);
       } catch (error) {
-        toast.error(getErrorMessage(error, "Unable to load manual booking data"));
+        toast.error(
+          getErrorMessage(error, "Unable to load manual booking data"),
+        );
       } finally {
         setIsLoading(false);
       }
@@ -77,7 +79,9 @@ function ManualBookingPage() {
       }
 
       try {
-        const response = await axiosInstance.get(`/admin/hostels/${formData.hostel_id}/rooms`);
+        const response = await axiosInstance.get(
+          `/admin/hostels/${formData.hostel_id}/rooms`,
+        );
 
         setRooms(response.data?.data?.rooms || []);
       } catch (error) {
@@ -105,7 +109,7 @@ function ManualBookingPage() {
 
       toast.success(
         `Allocated room ${formData.room_number} to ${formData.roll_number}`,
-        { id: toastId }
+        { id: toastId },
       );
       setFormData({
         roll_number: "",
@@ -137,9 +141,12 @@ function ManualBookingPage() {
                 Offline Allocation
               </span>
             </div>
-            <h1 className="text-4xl font-black text-white tracking-tight">Manual Allocation</h1>
+            <h1 className="text-4xl font-black text-white tracking-tight">
+              Manual Allocation
+            </h1>
             <p className="text-slate-500 text-sm font-medium">
-              Create a confirmed room booking directly from the backend admin API.
+              Create a confirmed room booking directly from the backend admin
+              API.
             </p>
           </div>
         </header>
@@ -172,7 +179,11 @@ function ManualBookingPage() {
                         roll_number: event.target.value,
                       }))
                     }
-                    placeholder={isLoading ? "Loading students..." : "Enter eligible student roll number"}
+                    placeholder={
+                      isLoading
+                        ? "Loading students..."
+                        : "Enter eligible student roll number"
+                    }
                     className="w-full pl-14 pr-6 py-5 bg-black/30 border border-white/10 rounded-3xl text-sm text-white focus:border-blue-500 focus:bg-black/50 outline-none transition-all placeholder:text-slate-700"
                   />
                   <datalist id="eligible-students">
@@ -212,8 +223,11 @@ function ManualBookingPage() {
                       >
                         <option value="">Select hostel</option>
                         {hostels.map((hostel) => (
-                          <option key={hostel.hostel_id} value={hostel.hostel_id}>
-                            {hostel.hostel_name}
+                          <option
+                            key={hostel.hostel_id}
+                            value={hostel.hostel_id}
+                          >
+                            {hostel.hostel_name} ({hostel.floors ?? 1} floors)
                           </option>
                         ))}
                       </select>
@@ -241,11 +255,17 @@ function ManualBookingPage() {
                       className="w-full px-6 py-5 bg-black/40 border border-white/10 rounded-[20px] text-sm text-white focus:border-blue-500 outline-none cursor-pointer appearance-none transition-all disabled:opacity-60"
                     >
                       <option value="">
-                        {!formData.hostel_id ? "Select hostel first" : "Select room"}
+                        {!formData.hostel_id
+                          ? "Select hostel first"
+                          : "Select room"}
                       </option>
                       {availableRooms.map((room) => (
-                        <option key={room._id || room.room_number} value={room.room_number}>
-                          {room.room_number} ({room.available_beds} beds free)
+                        <option
+                          key={room._id || room.room_number}
+                          value={room.room_number}
+                        >
+                          {room.room_number} - Floor {room.floor ?? 0} (
+                          {room.available_beds} beds free)
                         </option>
                       ))}
                     </select>
@@ -259,7 +279,9 @@ function ManualBookingPage() {
                 className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-widest rounded-3xl shadow-2xl shadow-blue-600/20 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-3 disabled:opacity-60"
               >
                 <CheckCircle2 size={18} />
-                {isSubmitting ? "Creating Allocation..." : "Confirm Manual Allocation"}
+                {isSubmitting
+                  ? "Creating Allocation..."
+                  : "Confirm Manual Allocation"}
               </button>
             </form>
           </div>
@@ -269,10 +291,13 @@ function ManualBookingPage() {
               <div className="p-3 bg-blue-500/20 rounded-xl w-fit mb-6 text-blue-500">
                 <Info size={24} />
               </div>
-              <h4 className="text-lg font-bold text-white mb-2">Admin Notice</h4>
+              <h4 className="text-lg font-bold text-white mb-2">
+                Admin Notice
+              </h4>
               <p className="text-xs text-slate-400 leading-relaxed font-medium">
-                Offline bookings are saved as confirmed allocations immediately, so choose a room
-                with available capacity and verify the student roll number carefully.
+                Offline bookings are saved as confirmed allocations immediately,
+                so choose a room with available capacity and verify the student
+                roll number carefully.
               </p>
               <ul className="mt-6 space-y-3">
                 <li className="flex items-start gap-3 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronDown, Hotel, LogOut, User } from "lucide-react";
+import { ChevronDown, Hotel, History, LogOut, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../hooks/useAuth";
@@ -66,7 +66,9 @@ function StudentNavbar() {
             <Hotel className="text-white w-5 h-5" />
           </div>
           <div className="leading-none">
-            <span className="text-white font-bold tracking-tight block">GLA Portal</span>
+            <span className="text-white font-bold tracking-tight block">
+              GLA Portal
+            </span>
             <span className="text-[#137fec] text-[9px] font-black uppercase tracking-[0.2em]">
               University
             </span>
@@ -81,8 +83,19 @@ function StudentNavbar() {
             Browse Hostels
           </Link>
 
+          <Link
+            to="/student/booking-history"
+            className="text-slate-400 hover:text-[#137fec] text-sm font-semibold transition-colors hidden sm:flex items-center gap-2"
+          >
+            <History size={16} />
+            Booking History
+          </Link>
+
           <div className="relative" ref={dropdownRef}>
-            <button onClick={toggleDropdown} className="cursor-pointer focus:outline-none">
+            <button
+              onClick={toggleDropdown}
+              className="cursor-pointer focus:outline-none"
+            >
               <AnimatedBorder className="min-w-35">
                 <div className="px-3 py-1.5 flex items-center gap-2">
                   <div className="w-6 h-6 rounded-md bg-[#137fec]/20 flex items-center justify-center text-[10px] font-bold text-[#137fec]">

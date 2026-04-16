@@ -42,6 +42,8 @@ export const createPaymentSession = asyncHandler(async (req, res) => {
             {
                 booking_id: booking._id,
                 status: booking.status,
+                amount: booking.price ?? 0,
+                currency: "INR",
                 expires_at: booking.expires_at,
                 gateway: "placeholder",
                 session_id: `demo_${booking._id}`,
@@ -98,6 +100,8 @@ export const getPaymentStatus = asyncHandler(async (req, res) => {
             {
                 booking_id: booking._id,
                 status: booking.status,
+                amount: booking.price ?? 0,
+                currency: "INR",
                 payment_reference: booking.payment_reference || null,
                 expires_at: booking.expires_at || null,
             },
