@@ -39,6 +39,7 @@ function StudentNavbar() {
     setIsDropdownOpen(false);
     await logout();
     Toast.success("Logout succefull😊");
+    
     navigate("/login", { replace: true });
   };
 
