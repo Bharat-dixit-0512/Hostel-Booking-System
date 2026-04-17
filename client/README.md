@@ -1,4 +1,564 @@
-# Hostel Booking System - Client
+# 🏨 Hostel Booking System - Client
+
+A modern, responsive web application for hostel room booking management built with **React 19** and **Vite**. This frontend provides comprehensive functionality for students and administrators to manage hostel accommodations through an intuitive user interface.
+
+## 📋 Table of Contents
+
+- [Overview](#overview)
+- [Tech Stack](#tech-stack)
+- [Features](#features)
+- [Project Structure](#project-structure)
+- [Installation](#installation)
+- [Development](#development)
+- [Build & Deployment](#build--deployment)
+- [Available Scripts](#available-scripts)
+- [Environment Configuration](#environment-configuration)
+- [Key Components](#key-components)
+- [API Integration](#api-integration)
+- [Authentication Flow](#authentication-flow)
+- [State Management](#state-management)
+- [Troubleshooting](#troubleshooting)
+
+---
+
+## 🎯 Overview
+
+The **Hostel Booking System Client** is a comprehensive frontend application with role-based interfaces:
+
+### 🎓 Student Features
+- Browse and book available hostel accommodations
+- Apply for FCFS (First Come First Serve) room allocation
+- Process secure online payments
+- Track booking status with real-time timers
+- Request and manage room swaps with other students
+- Download official allotment slips
+- View personal dashboard with booking history
+
+### 👨‍💼 Admin Features
+- Access comprehensive analytics and system metrics
+- Manage hostel inventory and room configurations
+- Process booking applications and handle registry
+- Create manual bookings for special cases
+- Approve/reject room swap requests
+- Monitor FCFS system performance
+- System controls and reset functionality
+
+---
+
+## 🛠️ Tech Stack
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **React** | ^19.2.4 | Modern UI framework with automatic compilation |
+| **Vite** | ^8.0.1 | Lightning-fast build tool and dev server |
+| **React Router DOM** | ^7.14.0 | Client-side routing for SPA navigation |
+| **Tailwind CSS** | ^4.2.2 | Utility-first CSS framework for rapid UI development |
+| **Axios** | ^1.14.0 | HTTP client with interceptors and error handling |
+| **React Hot Toast** | ^2.6.0 | Toast notifications for user feedback |
+| **Lucide React** | ^1.7.0 | Modern icon library with 1000+ icons |
+| **ESLint** | ^9.39.4 | Code quality enforcement and linting |
+| **React Compiler** | ^1.0.0 | Automatic performance optimization |
+
+### Why These Technologies?
+
+- **React 19**: Latest features, better performance, improved developer experience
+- **Vite**: Instant server start, lightning-fast HMR, optimized production builds
+- **Tailwind CSS**: Rapid development, consistent design, responsive helpers
+- **Axios**: Request interceptors, error handling, timeout management
+- **React Router**: Declarative routing, dynamic routes, protected pages
+
+---
+
+## ✨ Features
+
+### 🎓 Student Features
+
+#### 🏠 Browse Available Hostels and Rooms
+- View all available hostels with comprehensive details
+- Check individual room specifications and pricing
+- Filter by location, price range, amenities
+- Real-time room availability status
+- Compare hostels and make informed decisions
+
+#### 📝 Apply for Room Bookings
+- Complete online booking application
+- Select preferred hostel and room type
+- Submit applications for review
+- Track application status in real-time
+- Receive notifications on approval/rejection
+
+#### 💳 Secure Payment Processing
+- Multiple payment methods supported
+- Encrypted payment gateway integration
+- Automatic payment confirmation
+- Digital receipt generation
+- Installment payment options (if available)
+
+#### 📋 Manage Confirmed Bookings
+- View all confirmed bookings with details
+- Download and print allotment slips (PDF)
+- Check booking duration and renewal options
+- Access hostel contact information
+- Get check-in instructions
+
+#### 🔄 Request Room Swaps
+- Browse rooms available for swap
+- Create swap requests with reasons
+- Track swap request history
+- Communicate with potential swap partners
+- Complete swap after admin approval
+
+#### ⏱️ Real-time Booking Tracking
+- Countdown timers for booking windows
+- Virtual queue position display
+- Berth lock timer for room security
+- Live booking activity ticker
+- Personal statistics dashboard
+
+---
+
+### 👨‍💼 Admin Features
+
+#### 📊 Dashboard & Analytics
+- Real-time system statistics
+- Booking completion rates
+- FCFS performance metrics
+- Revenue tracking
+- System health monitoring
+
+#### ⚙️ Hostel Inventory Management
+- Add/edit/delete hostels
+- Configure room specifications
+- Set pricing and seasonal adjustments
+- Define occupancy limits
+- Manage amenities and facilities
+
+#### 👥 Application Registry
+- View all booking applications
+- Filter by status (pending/approved/rejected)
+- Review student information
+- Bulk approve/reject operations
+- Export data for reporting
+
+#### 💰 Manual Booking Management
+- Create manual bookings for special cases
+- Override normal booking rules
+- Assign specific rooms to students
+- Modify booking dates and assignments
+- Cancel bookings with explanations
+
+#### 🔄 Room Swap Approval
+- Review pending swap requests
+- Verify swap eligibility
+- Approve/reject with feedback
+- Monitor swap history
+- Generate compliance reports
+
+#### 🎮 System Controls
+- Configure booking window times
+- Reset system or clear bookings
+- Manage admin accounts
+- View audit trails and logs
+- Backup and restore data
+
+---
+
+## 📁 Project Structure
+
+```
+client/
+├── public/                      # Static assets
+├── src/
+│   ├── assets/                  # Images, icons, fonts
+│   ├── components/              # Reusable React components
+│   │   ├── AdminNavbar.jsx              # Admin navigation
+│   │   ├── StudentNavbar.jsx            # Student navigation
+│   │   ├── ProtectedRoute.jsx           # Route protection
+│   │   ├── BookingWindowToggle.jsx      # Booking time toggle
+│   │   ├── ThemePreferenceCard.jsx      # Theme selector
+│   │   └── FCFS/                        # FCFS components
+│   │       ├── AllotmentSlip.jsx
+│   │       ├── BerthLockTimer.jsx
+│   │       ├── LiveTicker.jsx
+│   │       ├── RoommateCode.jsx
+│   │       ├── SwapRequestCard.jsx
+│   │       └── VirtualQueue.jsx
+│   ├── config/                  # Configuration
+│   │   └── api.js               # API endpoints
+│   ├── context/                 # React Context
+│   │   ├── AuthContext.jsx      # Authentication
+│   │   └── ThemeContext.jsx     # Theme management
+│   ├── hooks/                   # Custom React hooks
+│   │   ├── useAuth.js
+│   │   └── useTheme.js
+│   ├── lib/                     # Utilities
+│   │   ├── axios.js             # Axios instance
+│   │   └── errors.js            # Error handling
+│   ├── pages/                   # Page components
+│   │   ├── LoginPage.jsx
+│   │   ├── AdminDashboardPage.jsx
+│   │   ├── StudentDashboardPage.jsx
+│   │   ├── BrowseHostelsPage.jsx
+│   │   ├── PaymentPage.jsx
+│   │   ├── RoomSwapDashboard.jsx
+│   │   ├── FCFSAnalytics.jsx
+│   │   ├── InventoryConfig.jsx
+│   │   └── ... (more pages)
+│   ├── App.jsx                  # Root component
+│   ├── main.jsx                 # Entry point
+│   └── index.css                # Global styles
+├── index.html                   # HTML template
+├── package.json                 # Dependencies
+├── vite.config.js               # Vite config
+├── eslint.config.js             # ESLint config
+└── README.md                    # This file
+```
+
+---
+
+## 🚀 Installation
+
+### Prerequisites
+
+- **Node.js** v16+ ([Download](https://nodejs.org/))
+- **npm** v7+ (comes with Node.js)
+- **Git** v2+ ([Download](https://git-scm.com/))
+
+### Verify Installation
+
+```bash
+node --version    # Should be v16+
+npm --version     # Should be v7+
+```
+
+### Setup Steps
+
+#### 1. Clone Repository
+
+```bash
+git clone https://github.com/Bharat-dixit-0512/Hostel-Booking-System.git
+cd Hostel-Booking-System/client
+```
+
+#### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+#### 3. Configure Environment
+
+Create `.env` file in client root:
+
+```env
+# API Configuration
+VITE_API_URL=http://localhost:5000
+VITE_API_TIMEOUT=30000
+
+# Application Settings
+VITE_APP_ENV=development
+VITE_DEBUG=true
+
+# Feature Flags
+VITE_ENABLE_FCFS=true
+VITE_ENABLE_PAYMENTS=true
+```
+
+#### 4. Verify Setup
+
+```bash
+npm run lint
+```
+
+---
+
+## 💻 Development
+
+### Start Development Server
+
+```bash
+npm run dev
+```
+
+Application runs at **http://localhost:5173** with HMR enabled.
+
+### Development Features
+
+- ⚡ **Fast Refresh** - Instant feedback on code changes
+- 🔥 **HMR Support** - Hot Module Replacement
+- 🎯 **React Compiler** - Automatic optimization
+- 📝 **ESLint** - Real-time code quality checks
+- 🗺️ **Source Maps** - Full debugging support
+
+### Code Quality
+
+```bash
+# Check code
+npm run lint
+
+# Fix automatically
+npm run lint -- --fix
+```
+
+### Best Practices
+
+1. **Components** - Keep focused, use hooks
+2. **State** - Use Context for global, useState for local
+3. **Organization** - Group related logic, meaningful names
+4. **Performance** - Memoize expensive components, code split
+5. **Errors** - Handle gracefully, show user-friendly messages
+
+---
+
+## 🔨 Build & Deployment
+
+### Production Build
+
+```bash
+npm run build
+```
+
+Creates optimized production build in `dist/` folder.
+
+### Preview Build
+
+```bash
+npm run preview
+```
+
+Test production build locally at **http://localhost:4173**.
+
+### Deployment Options
+
+#### 1. Static Hosting (Vercel, Netlify)
+- Push to GitHub
+- Connect repository to hosting platform
+- Configure build: `npm run build`
+- Build directory: `dist`
+
+#### 2. Traditional Server (Nginx, Apache)
+- Build: `npm run build`
+- Copy `dist/` to server web root
+- Configure SPA routing (all requests → index.html)
+- Enable gzip compression
+
+#### 3. Docker
+```dockerfile
+FROM node:19-alpine as build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+---
+
+## 📦 Available Scripts
+
+```bash
+npm run dev        # Start development server with HMR
+npm run build      # Create production build
+npm run preview    # Preview production build locally
+npm run lint       # Run ESLint checks
+```
+
+---
+
+## 🔧 Environment Configuration
+
+### Variables
+
+```env
+VITE_API_URL       # Backend API URL (required)
+VITE_API_TIMEOUT   # Request timeout in ms (default: 30000)
+VITE_APP_ENV       # Environment: development/staging/production
+VITE_DEBUG         # Enable debug logging: true/false
+VITE_ENABLE_FCFS   # Enable FCFS feature: true/false
+VITE_ENABLE_PAYMENTS # Enable payments: true/false
+```
+
+### Environment Profiles
+
+**Development:**
+```env
+VITE_API_URL=http://localhost:5000
+VITE_DEBUG=true
+```
+
+**Production:**
+```env
+VITE_API_URL=https://api.yourdomain.com
+VITE_DEBUG=false
+```
+
+---
+
+## 🔌 Key Components
+
+### Navigation
+- **AdminNavbar** - Admin navigation with management links
+- **StudentNavbar** - Student navigation with profile links
+
+### FCFS System
+- **AllotmentSlip** - Room allocation display
+- **BerthLockTimer** - Room lock countdown timer
+- **LiveTicker** - Real-time booking feed
+- **VirtualQueue** - Queue position display
+
+### Utility
+- **ProtectedRoute** - Route authentication wrapper
+- **ThemePreferenceCard** - Theme selector
+- **BookingWindowToggle** - Booking window control
+
+---
+
+## 🔗 API Integration
+
+### Axios Configuration
+
+Pre-configured with:
+- JWT token attachment
+- Error handling
+- Request/response logging
+- Timeout configuration
+- CORS support
+
+### API Endpoints
+
+```
+POST   /api/auth/student/login
+POST   /api/auth/admin/login
+GET    /api/auth/me
+
+GET    /api/hostels
+GET    /api/hostels/:hostelId/rooms
+
+POST   /api/bookings
+GET    /api/bookings/me
+PUT    /api/bookings/:id/cancel
+
+POST   /api/payments/create-session
+GET    /api/payments/:id/status
+
+GET    /api/admin/hostels
+POST   /api/admin/offline-bookings
+```
+
+---
+
+## 🔐 Authentication
+
+### Login Flow
+
+1. User enters credentials on LoginPage
+2. Backend validates and returns JWT token
+3. Token stored in cookies and localStorage
+4. User redirected to appropriate dashboard
+5. Token attached to API requests
+
+### Protected Routes
+
+```jsx
+<ProtectedRoute allowedLoginTypes={["admin"]}>
+  <AdminDashboardPage />
+</ProtectedRoute>
+```
+
+### Auth Context
+
+- Current user info
+- Authentication status
+- Login/logout functions
+- User roles and permissions
+
+---
+
+## 💾 State Management
+
+### React Context API
+
+- **AuthContext** - User authentication and roles
+- **ThemeContext** - Light/dark theme preference
+
+### Local State
+
+- Form inputs with `useState`
+- UI toggles and modals
+- Component-specific flags
+
+---
+
+## 🐛 Troubleshooting
+
+### Port Already in Use
+Vite automatically uses the next available port.
+
+### Dependencies Fail to Install
+```bash
+npm cache clean --force
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### Environment Variables Not Loading
+- Check `.env` is in client root directory
+- Restart dev server
+- Verify variables start with `VITE_`
+
+### API Connection Errors
+- Verify backend is running
+- Check `VITE_API_URL` is correct
+- Verify CORS is enabled on backend
+
+### Hot Reload Issues
+- Clear browser cache
+- Restart dev server
+- Verify file saved successfully
+
+---
+
+## 🤝 Contributing
+
+### Code Style
+- Use ESLint rules
+- Follow React best practices
+- Meaningful names
+- Clear comments
+
+### Commit Messages
+```
+feat: add new feature
+fix: fix bug
+docs: update docs
+style: formatting
+refactor: code restructuring
+```
+
+---
+
+## 📞 Support
+
+- Check existing GitHub issues
+- Create new GitHub issue
+- Contact development team
+
+---
+
+## 📄 License
+
+ISC
+
+---
+
+**Last Updated:** April 2026  
+**Version:** 1.0.0
+# 🏨 Hostel Booking System - Client
 
 A modern, responsive web application for hostel room booking management built with React and Vite. This frontend provides comprehensive functionality for students and administrators to manage hostel accommodations through an intuitive user interface.
 
@@ -13,6 +573,12 @@ A modern, responsive web application for hostel room booking management built wi
 - [Available Scripts](#available-scripts)
 - [Features](#features)
 - [Environment Configuration](#environment-configuration)
+- [Key Components](#key-components)
+- [API Integration](#api-integration)
+- [Authentication Flow](#authentication-flow)
+- [State Management](#state-management)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
 
 ## 🎯 Overview
 
