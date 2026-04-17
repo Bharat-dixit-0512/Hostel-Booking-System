@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 
 const DEFAULT_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+const isProduction = process.env.NODE_ENV === "production";
 
 const getJwtSecret = () => process.env.JWT_SECRET || "development_jwt_secret";
 
@@ -13,8 +14,8 @@ export const verifyAccessToken = (token) => jwt.verify(token, getJwtSecret());
 
 export const getAuthCookieOptions = () => ({
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
     maxAge: DEFAULT_COOKIE_MAX_AGE,
 });
 
