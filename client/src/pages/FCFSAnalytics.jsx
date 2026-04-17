@@ -134,7 +134,7 @@ const FCFSAnalytics = () => {
                                 </h3>
                                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Immutable Transaction Logs</p>
                             </div>
-                            <button className="p-2 bg-white/5 rounded-xl hover:bg-white/10 transition-all">
+                            <button className="p-2 bg-white/5 rounded-xl hover:bg-white/10 transition-all cursor-pointer">
                                 <History size={16} className="text-slate-400" />
                             </button>
                         </div>

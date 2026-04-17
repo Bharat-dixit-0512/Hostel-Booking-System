@@ -28,7 +28,7 @@ const RoomEditPage = () => {
       <input placeholder="Hostel ID" value={hostelId} onChange={e => setHostelId(e.target.value)} />
       <input placeholder="Room Number" value={roomNumber} onChange={e => setRoomNumber(e.target.value)} />
       <input placeholder="Capacity" value={capacity} onChange={e => setCapacity(e.target.value)} />
-      <button onClick={handleUpdate} disabled={loading || !hostelId || !roomNumber || !capacity}>Update Room</button>
+      <button className="cursor-pointer" onClick={handleUpdate} disabled={loading || !hostelId || !roomNumber || !capacity}>Update Room</button>
       {error && <div style={{color:'red'}}>{error}</div>}
     </div>
   );

@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 
 import AdminNavbar from "../components/AdminNavbar";
 import AnimatedBorder from "../components/AnimatedBorder";
+import ThemePreferenceCard from "../components/ThemePreferenceCard";
 import { useAuth } from "../hooks/useAuth";
 
 const AdminInfoTile = ({ icon, label, value, color = "text-white" }) => (
@@ -131,6 +132,14 @@ function AdminProfile() {
                 </div>
               </div>
             </AnimatedBorder>
+
+            <ThemePreferenceCard
+              accentTextClass="text-emerald-500"
+              accentSurfaceClass="bg-emerald-500/10"
+              accentBorderClass="border-emerald-500/20"
+              accentGlowClass="shadow-[0_0_20px_rgba(16,185,129,0.16)]"
+              accentLabel="Profile Switch"
+            />
 
             <div className="bg-emerald-500/5 border border-emerald-500/10 p-6 rounded-3xl text-center backdrop-blur-md">
               <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-[0.3em]">

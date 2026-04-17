@@ -223,7 +223,7 @@ function PaymentPage() {
             <button
               type="button"
               onClick={() => navigate("/student/profile")}
-              className="w-full py-4 bg-white/5 text-slate-400 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2"
+              className="w-full py-4 bg-white/5 text-slate-400 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer"
             >
               <Download size={14} />
               View Profile Allocation

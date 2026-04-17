@@ -47,13 +47,13 @@ const SwapRequestCard = ({ type = "incoming", sender, currentRoom, targetRoom, o
                 <div className="flex gap-3 relative z-10">
                     <button 
                         onClick={onAccept}
-                        className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                        className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                         <Check size={16} /> Accept Swap
                     </button>
                     <button 
                         onClick={onDecline}
-                        className="p-4 bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-500 rounded-2xl transition-all"
+                        className="p-4 bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-500 rounded-2xl transition-all cursor-pointer"
                     >
                         <X size={18} />
                     </button>

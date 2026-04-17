@@ -69,7 +69,10 @@ const ResetSystemAction = ({ disabled = false, onSuccess }) => {
 
       {showModal ? (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowModal(false)} />
+          <div
+            className="absolute inset-0 bg-black/80 backdrop-blur-md cursor-pointer"
+            onClick={() => setShowModal(false)}
+          />
 
           <div className="relative w-full max-w-lg bg-[#15202b] border border-white/10 rounded-[40px] p-10 shadow-3xl animate-in zoom-in-95 duration-200">
             <button

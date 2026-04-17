@@ -6,6 +6,7 @@ import {
   ProtectedRoute,
   PublicOnlyRoute,
 } from "./components/ProtectedRoute.jsx";
+import { useTheme } from "./hooks/useTheme";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminProfile from "./pages/AdminProfile";
 import ApplicationRegistryPage from "./pages/ApplicationRegistryPage.jsx";
@@ -25,8 +26,11 @@ import StudentDashboardPage from "./pages/StudentDashboardPage.jsx";
 import StudentProfile from "./pages/StudentProfile.jsx";
 
 function App() {
+  const { theme } = useTheme();
+  const isDarkTheme = theme === "dark";
+
   return (
-    <div className="min-h-screen bg-[#101922] relative overflow-hidden">
+    <div className="min-h-screen bg-[#101922] relative overflow-hidden transition-colors duration-300">
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute -top-[10%] -left-[5%] w-125 h-125 bg-emerald-500/5 rounded-full blur-[120px]" />
         <div className="absolute bottom-0 right-0 w-100 h-100 bg-blue-600/5 rounded-full blur-[100px]" />
@@ -187,10 +191,15 @@ function App() {
           reverseOrder={false}
           toastOptions={{
             style: {
-              background: "#15202b",
-              color: "#fff",
-              border: "1px solid rgba(255,255,255,0.1)",
+              background: isDarkTheme ? "#15202b" : "#ffffff",
+              color: isDarkTheme ? "#ffffff" : "#0f172a",
+              border: isDarkTheme
+                ? "1px solid rgba(255,255,255,0.1)"
+                : "1px solid rgba(15,23,42,0.08)",
               borderRadius: "16px",
+              boxShadow: isDarkTheme
+                ? "0 20px 45px rgba(2, 6, 23, 0.35)"
+                : "0 20px 45px rgba(15, 23, 42, 0.12)",
             },
           }}
         />

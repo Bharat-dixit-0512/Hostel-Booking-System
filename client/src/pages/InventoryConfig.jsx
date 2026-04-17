@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  AlertTriangle,
   ChevronDown,
   FileUp,
   Pencil,
@@ -43,6 +44,126 @@ const getNormalizedPricing = (pricingRows = []) =>
       ...category,
       price: Number(existingPricing?.price ?? 0),
     };
+  });
+
+const clonePricingRows = (pricingRows = []) =>
+  getNormalizedPricing(pricingRows).map((row) => ({
+    ...row,
+    price: Number(row.price ?? 0),
+  }));
+
+const getPricingCategoryPrice = (pricingRows = [], capacity, acType) =>
+  Number(
+    getNormalizedPricing(pricingRows).find(
+      (row) =>
+        Number(row.capacity) === Number(capacity) &&
+        Boolean(row.ac_type) === Boolean(acType),
+    )?.price ?? 0,
+  );
+
+const isPricingCategoryChanged = (
+  pricingRows = [],
+  savedPricingRows = [],
+  category,
+) =>
+  getPricingCategoryPrice(pricingRows, category.capacity, category.ac_type) !==
+  getPricingCategoryPrice(savedPricingRows, category.capacity, category.ac_type);
+
+const getPricingChangeCount = (pricingRows = [], savedPricingRows = []) =>
+  PRICING_CATEGORIES.filter((category) =>
+    isPricingCategoryChanged(pricingRows, savedPricingRows, category),
+  ).length;
+
+const confirmInventoryAction = ({
+  title,
+  description,
+  confirmLabel,
+  variant = "danger",
+  icon: Icon = AlertTriangle,
+}) =>
+  new Promise((resolve) => {
+    let isSettled = false;
+    const variantStyles =
+      variant === "success"
+        ? {
+            border: "border-emerald-500/20",
+            iconWrapper: "bg-emerald-500/10",
+            iconColor: "text-emerald-400",
+            confirmButton: "bg-emerald-500 hover:bg-emerald-600",
+          }
+        : {
+            border: "border-red-500/20",
+            iconWrapper: "bg-red-500/10",
+            iconColor: "text-red-400",
+            confirmButton: "bg-red-500 hover:bg-red-600",
+          };
+
+    const settle = (value, toastId) => {
+      if (isSettled) {
+        return;
+      }
+
+      isSettled = true;
+      toast.dismiss(toastId);
+      resolve(value);
+    };
+
+    toast.custom(
+      (toastInstance) => (
+        <div
+          className={`pointer-events-auto w-full max-w-md rounded-[32px] border bg-[#15202b] p-6 shadow-2xl ${variantStyles.border}`}
+        >
+          <div className="flex items-start gap-4">
+            <div
+              className={`rounded-2xl p-3 ${variantStyles.iconWrapper} ${variantStyles.iconColor}`}
+            >
+              <Icon size={22} />
+            </div>
+
+            <div className="min-w-0 flex-1 space-y-3">
+              <div className="space-y-1">
+                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">
+                  {title}
+                </h3>
+                <p className="text-sm leading-relaxed text-slate-400">
+                  {description}
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => settle(false, toastInstance.id)}
+                  className="flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-black uppercase tracking-widest text-slate-300 transition-all hover:bg-white/10 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => settle(true, toastInstance.id)}
+                  className={`flex-1 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-white transition-all cursor-pointer ${variantStyles.confirmButton}`}
+                >
+                  {confirmLabel}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => settle(false, toastInstance.id)}
+              className="rounded-xl p-2 text-slate-500 transition-colors hover:bg-white/5 hover:text-white cursor-pointer"
+              aria-label="Close confirmation"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        duration: Infinity,
+        position: "top-center",
+      },
+    );
   });
 
 const RoomCard = ({ canManage, onDelete, onEdit, room }) => (
@@ -145,11 +266,16 @@ function InventoryConfigPage() {
       );
 
       setHostels(
-        fetchedHostels.map((hostel) => ({
-          ...hostel,
-          rooms: roomsByHostelId.get(hostel.hostel_id) || [],
-          pricing: getNormalizedPricing(hostel.pricing || []),
-        })),
+        fetchedHostels.map((hostel) => {
+          const normalizedPricing = clonePricingRows(hostel.pricing || []);
+
+          return {
+            ...hostel,
+            rooms: roomsByHostelId.get(hostel.hostel_id) || [],
+            pricing: normalizedPricing,
+            savedPricing: clonePricingRows(normalizedPricing),
+          };
+        }),
       );
     } catch (error) {
       toast.error(getErrorMessage(error, "Unable to load inventory"));
@@ -409,9 +535,11 @@ function InventoryConfigPage() {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Delete ${hostel.hostel_name} and its inventory? This will fail if any room has booked capacity.`,
-    );
+    const confirmed = await confirmInventoryAction({
+      title: "Delete Hostel",
+      description: `Delete ${hostel.hostel_name} and its inventory? This will fail if any room still has booked capacity.`,
+      confirmLabel: "Delete Hostel",
+    });
 
     if (!confirmed) {
       return;
@@ -435,9 +563,11 @@ function InventoryConfigPage() {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Delete room ${room.room_number} from ${hostel.hostel_name}? This will fail if the room has booked capacity.`,
-    );
+    const confirmed = await confirmInventoryAction({
+      title: "Delete Room",
+      description: `Delete room ${room.room_number} from ${hostel.hostel_name}? This will fail if the room still has booked capacity.`,
+      confirmLabel: "Delete Room",
+    });
 
     if (!confirmed) {
       return;
@@ -486,12 +616,35 @@ function InventoryConfigPage() {
     }
 
     const normalizedPricing = getNormalizedPricing(hostel.pricing || []);
+    const pricingChangeCount = getPricingChangeCount(
+      normalizedPricing,
+      hostel.savedPricing || [],
+    );
     const hasInvalidPrice = normalizedPricing.some(
       (row) => Number(row.price) < 0 || Number.isNaN(Number(row.price)),
     );
 
     if (hasInvalidPrice) {
       toast.error("All prices must be non-negative numbers");
+      return;
+    }
+
+    if (pricingChangeCount === 0) {
+      toast.error("No pricing changes to save");
+      return;
+    }
+
+    const confirmed = await confirmInventoryAction({
+      title: "Confirm Pricing Update",
+      description: `${pricingChangeCount} pricing ${
+        pricingChangeCount === 1 ? "category has" : "categories have"
+      } been changed for ${hostel.hostel_name}. Do you want to save these updates now?`,
+      confirmLabel: "Save Pricing",
+      variant: "success",
+      icon: Settings2,
+    });
+
+    if (!confirmed) {
       return;
     }
 
@@ -520,6 +673,7 @@ function InventoryConfigPage() {
             ? {
                 ...entry,
                 pricing: updatedPricing,
+                savedPricing: clonePricingRows(updatedPricing),
               }
             : entry,
         ),
@@ -619,6 +773,10 @@ function InventoryConfigPage() {
           ) : filteredHostels.length > 0 ? (
             filteredHostels.map((hostel) => {
               const isExpanded = expandedHostelId === hostel.hostel_id;
+              const pricingChangeCount = getPricingChangeCount(
+                hostel.pricing || [],
+                hostel.savedPricing || [],
+              );
 
               return (
                 <section
@@ -711,49 +869,98 @@ function InventoryConfigPage() {
                             type="button"
                             disabled={
                               !canManage ||
-                              pricingSavingHostelId === hostel.hostel_id
+                              pricingSavingHostelId === hostel.hostel_id ||
+                              pricingChangeCount === 0
                             }
                             onClick={() => handleSaveHostelPricing(hostel)}
-                            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                           >
                             {pricingSavingHostelId === hostel.hostel_id
                               ? "Saving..."
-                              : "Save Pricing"}
+                              : pricingChangeCount > 0
+                                ? `Save ${pricingChangeCount} Change${
+                                    pricingChangeCount > 1 ? "s" : ""
+                                  }`
+                                : "Save Pricing"}
                           </button>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                           {getNormalizedPricing(hostel.pricing || []).map(
-                            (category) => (
-                              <div
-                                key={`${category.capacity}_${category.ac_type}`}
-                                className="rounded-2xl border border-white/10 bg-black/30 p-4 space-y-2"
-                              >
-                                <p className="text-xs font-bold text-white">
-                                  {category.label}
-                                </p>
-                                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/40 px-3 py-2">
-                                  <span className="text-xs font-bold text-slate-400">
-                                    Rs.
-                                  </span>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    disabled={!canManage}
-                                    value={category.price}
-                                    onChange={(event) =>
-                                      handlePricingInputChange(
-                                        hostel.hostel_id,
-                                        category.capacity,
-                                        category.ac_type,
-                                        event.target.value,
-                                      )
-                                    }
-                                    className="w-full bg-transparent text-sm text-white focus:outline-none disabled:text-slate-500"
-                                  />
+                            (category) => {
+                              const isChanged = isPricingCategoryChanged(
+                                hostel.pricing || [],
+                                hostel.savedPricing || [],
+                                category,
+                              );
+                              const originalPrice = getPricingCategoryPrice(
+                                hostel.savedPricing || [],
+                                category.capacity,
+                                category.ac_type,
+                              );
+
+                              return (
+                                <div
+                                  key={`${category.capacity}_${category.ac_type}`}
+                                  className={`rounded-2xl border p-4 space-y-2 transition-all ${
+                                    isChanged
+                                      ? "border-emerald-400/30 bg-emerald-500/10 shadow-[0_0_24px_rgba(16,185,129,0.08)]"
+                                      : "border-white/10 bg-black/30"
+                                  }`}
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <p className="text-xs font-bold text-white">
+                                      {category.label}
+                                    </p>
+                                    {isChanged ? (
+                                      <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-emerald-300">
+                                        Changed
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <div
+                                    className={`flex items-center gap-2 rounded-xl border px-3 py-2 transition-all ${
+                                      isChanged
+                                        ? "border-emerald-400/30 bg-emerald-500/5"
+                                        : "border-white/10 bg-black/40"
+                                    }`}
+                                  >
+                                    <span
+                                      className={`text-xs font-bold ${
+                                        isChanged
+                                          ? "text-emerald-300"
+                                          : "text-slate-400"
+                                      }`}
+                                    >
+                                      Rs.
+                                    </span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      disabled={!canManage}
+                                      value={category.price}
+                                      onChange={(event) =>
+                                        handlePricingInputChange(
+                                          hostel.hostel_id,
+                                          category.capacity,
+                                          category.ac_type,
+                                          event.target.value,
+                                        )
+                                      }
+                                      className="w-full bg-transparent text-sm text-white focus:outline-none disabled:text-slate-500"
+                                    />
+                                  </div>
+                                  {isChanged ? (
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-300">
+                                      Previous: Rs.{" "}
+                                      {Number(originalPrice).toLocaleString(
+                                        "en-IN",
+                                      )}
+                                    </p>
+                                  ) : null}
                                 </div>
-                              </div>
-                            ),
+                              );
+                            },
                           )}
                         </div>
                       </div>
@@ -810,7 +1017,7 @@ function InventoryConfigPage() {
               <button
                 type="button"
                 onClick={closeModal}
-                className="text-slate-500 hover:text-white"
+                className="text-slate-500 hover:text-white cursor-pointer"
               >
                 <X size={18} />
               </button>
