@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronDown, Hotel, History, LogOut, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-
+import Toast from 'react-hot-toast';
 import { useAuth } from "../hooks/useAuth";
 import { useClickMouse } from "../hooks/ClickMouse";
 import AnimatedBorder from "./AnimatedBorder";
@@ -38,6 +38,8 @@ function StudentNavbar() {
     playClickSound();
     setIsDropdownOpen(false);
     await logout();
+    Toast.success("Logout succefull😊");
+    
     navigate("/login", { replace: true });
   };
 
