@@ -10,6 +10,8 @@ import {
   getRoomModel,
   startHostelSession,
 } from "../db/index.js";
+import { REALTIME_EVENTS } from "../socket/events.js";
+import { emitRealtimeEvent } from "../socket/index.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
@@ -257,6 +259,12 @@ export const createRoom = asyncHandler(async (req, res) => {
     ac_type: acType,
   });
 
+  emitRealtimeEvent(REALTIME_EVENTS.INVENTORY_CHANGED, {
+    action: "room_created",
+    hostel_id: hostelId,
+    room_number: room.room_number,
+  });
+
   res.status(201).json(
     new ApiResponse(
       201,
@@ -337,6 +345,12 @@ export const updateRoom = asyncHandler(async (req, res) => {
 
   await room.save();
 
+  emitRealtimeEvent(REALTIME_EVENTS.INVENTORY_CHANGED, {
+    action: "room_updated",
+    hostel_id: hostelId,
+    room_number: room.room_number,
+  });
+
   res.status(200).json(
     new ApiResponse(
       200,
@@ -383,6 +397,12 @@ export const deleteRoom = asyncHandler(async (req, res) => {
 
     await room.deleteOne({ session });
     await session.commitTransaction();
+
+    emitRealtimeEvent(REALTIME_EVENTS.INVENTORY_CHANGED, {
+      action: "room_deleted",
+      hostel_id: hostelId,
+      room_number: roomNumber,
+    });
 
     res.status(200).json(
       new ApiResponse(
@@ -444,6 +464,12 @@ export const confirmRoomImport = asyncHandler(async (req, res) => {
       ),
     );
   }
+
+  emitRealtimeEvent(REALTIME_EVENTS.INVENTORY_CHANGED, {
+    action: "room_import_confirmed",
+    hostel_id: hostelId,
+    summary: result.summary,
+  });
 
   return res
     .status(200)

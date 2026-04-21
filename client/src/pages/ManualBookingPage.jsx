@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ArrowRight,
   Bed,
@@ -11,8 +11,10 @@ import {
 import toast from "react-hot-toast";
 
 import AdminNavbar from "../components/AdminNavbar";
+import { useRealtimeRefresh } from "../hooks/useRealtimeRefresh";
 import axiosInstance from "../lib/axios";
 import { getErrorMessage } from "../lib/errors";
+import { REALTIME_EVENTS } from "../lib/realtimeEvents";
 import { useClickMouse } from "../hooks/ClickMouse";
 
 const UserPlusIcon = ({ className, size }) => (
@@ -34,6 +36,12 @@ const UserPlusIcon = ({ className, size }) => (
   </svg>
 );
 
+const MANUAL_BOOKING_EVENTS = [
+  REALTIME_EVENTS.BOOKING_CHANGED,
+  REALTIME_EVENTS.INVENTORY_CHANGED,
+  REALTIME_EVENTS.SESSION_RESET,
+];
+
 function ManualBookingPage() {
   const playClickSound = useClickMouse();
   const [students, setStudents] = useState([]);
@@ -47,9 +55,11 @@ function ManualBookingPage() {
     room_number: "",
   });
 
-  useEffect(() => {
-    const loadInitialData = async () => {
-      setIsLoading(true);
+  const loadInitialData = useCallback(
+    async ({ showLoading = true, showErrors = true } = {}) => {
+      if (showLoading) {
+        setIsLoading(true);
+      }
 
       try {
         const [studentsResponse, hostelsResponse] = await Promise.all([
@@ -60,37 +70,60 @@ function ManualBookingPage() {
         setStudents(studentsResponse.data?.data?.students || []);
         setHostels(hostelsResponse.data?.data?.hostels || []);
       } catch (error) {
-        toast.error(
-          getErrorMessage(error, "Unable to load manual booking data"),
-        );
+        if (showErrors) {
+          toast.error(
+            getErrorMessage(error, "Unable to load manual booking data"),
+          );
+        }
       } finally {
-        setIsLoading(false);
+        if (showLoading) {
+          setIsLoading(false);
+        }
       }
-    };
-
-    loadInitialData();
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
-    const loadRooms = async () => {
-      if (!formData.hostel_id) {
+    loadInitialData();
+  }, [loadInitialData]);
+
+  const loadRoomsForHostel = useCallback(
+    async (hostelId, { showErrors = true } = {}) => {
+      if (!hostelId) {
         setRooms([]);
         return;
       }
 
       try {
         const response = await axiosInstance.get(
-          `/admin/hostels/${formData.hostel_id}/rooms`,
+          `/admin/hostels/${hostelId}/rooms`,
         );
 
         setRooms(response.data?.data?.rooms || []);
       } catch (error) {
-        toast.error(getErrorMessage(error, "Unable to load hostel rooms"));
+        if (showErrors) {
+          toast.error(getErrorMessage(error, "Unable to load hostel rooms"));
+        }
       }
-    };
+    },
+    [],
+  );
 
-    loadRooms();
-  }, [formData.hostel_id]);
+  useEffect(() => {
+    loadRoomsForHostel(formData.hostel_id);
+  }, [formData.hostel_id, loadRoomsForHostel]);
+
+  const refreshManualBookingData = useCallback(async () => {
+    await loadInitialData({ showLoading: false, showErrors: false });
+    await loadRoomsForHostel(formData.hostel_id, { showErrors: false });
+  }, [formData.hostel_id, loadInitialData, loadRoomsForHostel]);
+
+  useRealtimeRefresh({
+    enabled: !isSubmitting,
+    events: MANUAL_BOOKING_EVENTS,
+    onRefresh: refreshManualBookingData,
+  });
 
   const availableRooms = rooms.filter((room) => room.available_beds > 0);
 

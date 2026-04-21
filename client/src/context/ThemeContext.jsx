@@ -1,6 +1,6 @@
-import { createContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-export const ThemeContext = createContext(null);
+import { ThemeContext } from "./ThemeContextStore";
 
 const THEME_STORAGE_KEY = "hostel-booking-theme";
 
@@ -11,7 +11,9 @@ const getStoredTheme = () => {
 
   const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
 
-  return storedTheme === "light" || storedTheme === "dark" ? storedTheme : "dark";
+  return storedTheme === "light" || storedTheme === "dark"
+    ? storedTheme
+    : "dark";
 };
 
 export function ThemeProvider({ children }) {

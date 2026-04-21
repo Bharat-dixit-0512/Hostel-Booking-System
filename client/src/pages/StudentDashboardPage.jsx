@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ArrowRight,
   BedDouble,
@@ -14,8 +14,10 @@ import { useNavigate } from "react-router-dom";
 
 import StudentNavbar from "../components/StudentNavbar";
 import { useAuth } from "../hooks/useAuth";
+import { useRealtimeRefresh } from "../hooks/useRealtimeRefresh";
 import axiosInstance from "../lib/axios";
 import { getErrorMessage } from "../lib/errors";
+import { REALTIME_EVENTS } from "../lib/realtimeEvents";
 
 const ACTIVE_BOOKING_STATUSES = new Set(["PENDING", "CONFIRMED"]);
 
@@ -35,13 +37,13 @@ const DashboardCard = ({
     <div
       className={`absolute -top-4 -right-4 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity ${colorClass}`}
     >
-      <Icon size={120} />
+      {React.createElement(Icon, { size: 120 })}
     </div>
 
     <div className="relative z-10 space-y-6">
       <div className="flex justify-between items-start">
         <div className={`p-4 rounded-2xl bg-white/5 ${colorClass}`}>
-          <Icon size={24} />
+          {React.createElement(Icon, { size: 24 })}
         </div>
         {badge ? (
           <span className="text-[9px] font-black uppercase tracking-widest bg-[#137fec]/10 text-[#137fec] px-2 py-1 rounded-full border border-[#137fec]/20">
@@ -67,7 +69,7 @@ const DashboardCard = ({
 const SummaryTile = ({ icon: Icon, label, value }) => (
   <div className="flex items-center gap-5 p-6 bg-[#15202b]/40 border border-white/5 rounded-3xl backdrop-blur-md">
     <div className="p-3 bg-white/5 rounded-xl text-[#137fec]">
-      <Icon size={20} />
+      {React.createElement(Icon, { size: 20 })}
     </div>
     <div>
       <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
@@ -94,6 +96,13 @@ const getLatestActiveBooking = (bookings) =>
   bookings.find((booking) => ACTIVE_BOOKING_STATUSES.has(booking.status)) ||
   null;
 
+const STUDENT_DASHBOARD_EVENTS = [
+  REALTIME_EVENTS.BOOKING_CHANGED,
+  REALTIME_EVENTS.INVENTORY_CHANGED,
+  REALTIME_EVENTS.BOOKING_WINDOW_UPDATED,
+  REALTIME_EVENTS.SESSION_RESET,
+];
+
 function StudentDashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -102,11 +111,11 @@ function StudentDashboardPage() {
   const [bookingWindowOpen, setBookingWindowOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadDashboard = async () => {
-      setIsLoading(true);
+  const loadDashboard = useCallback(
+    async ({ showLoading = true, showErrors = true } = {}) => {
+      if (showLoading) {
+        setIsLoading(true);
+      }
 
       try {
         const [bookingsResponse, hostelsResponse] = await Promise.all([
@@ -114,34 +123,36 @@ function StudentDashboardPage() {
           axiosInstance.get("/hostels"),
         ]);
 
-        if (!isMounted) {
-          return;
-        }
-
         setBookings(bookingsResponse.data?.data?.bookings || []);
         setHostels(hostelsResponse.data?.data?.hostels || []);
         setBookingWindowOpen(
           Boolean(hostelsResponse.data?.data?.booking_window_open),
         );
       } catch (error) {
-        if (isMounted) {
+        if (showErrors) {
           toast.error(getErrorMessage(error, "Unable to load dashboard"));
         }
       } finally {
-        if (isMounted) {
+        if (showLoading) {
           setIsLoading(false);
         }
       }
-    };
+    },
+    [],
+  );
 
+  useEffect(() => {
     if (user?.roll_number) {
       loadDashboard();
     }
+  }, [loadDashboard, user?.roll_number]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.roll_number]);
+  useRealtimeRefresh({
+    enabled: Boolean(user?.roll_number),
+    events: STUDENT_DASHBOARD_EVENTS,
+    onRefresh: () =>
+      loadDashboard({ showLoading: false, showErrors: false }),
+  });
 
   const latestActiveBooking = getLatestActiveBooking(bookings);
   const pendingBooking =

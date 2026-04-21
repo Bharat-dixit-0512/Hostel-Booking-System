@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Calendar,
   Hash,
@@ -11,8 +11,10 @@ import {
 import toast from "react-hot-toast";
 
 import StudentNavbar from "../components/StudentNavbar";
+import { useRealtimeRefresh } from "../hooks/useRealtimeRefresh";
 import axiosInstance from "../lib/axios";
 import { getErrorMessage } from "../lib/errors";
+import { REALTIME_EVENTS } from "../lib/realtimeEvents";
 
 const STATUS_STYLES = {
   CANCELLED: "bg-red-500/10 text-red-400",
@@ -28,13 +30,15 @@ const STATUS_ICONS = {
   PENDING: AlertCircle,
 };
 
-const formatDateTime = (value) =>
-  value ? new Date(value).toLocaleString() : "N/A";
-
 const formatDate = (value) =>
   value ? new Date(value).toLocaleDateString() : "N/A";
 const formatCurrency = (value) =>
   `Rs. ${Number(value ?? 0).toLocaleString("en-IN")}`;
+
+const BOOKING_HISTORY_EVENTS = [
+  REALTIME_EVENTS.BOOKING_CHANGED,
+  REALTIME_EVENTS.SESSION_RESET,
+];
 
 function BookingHistoryPage() {
   const [bookings, setBookings] = useState([]);
@@ -42,22 +46,37 @@ function BookingHistoryPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const loadBookings = async () => {
-      setIsLoading(true);
+  const loadBookings = useCallback(
+    async ({ showLoading = true, showErrors = true } = {}) => {
+      if (showLoading) {
+        setIsLoading(true);
+      }
 
       try {
         const response = await axiosInstance.get("/bookings/me");
         setBookings(response.data?.data?.bookings || []);
       } catch (error) {
-        toast.error(getErrorMessage(error, "Unable to load booking history"));
+        if (showErrors) {
+          toast.error(getErrorMessage(error, "Unable to load booking history"));
+        }
       } finally {
-        setIsLoading(false);
+        if (showLoading) {
+          setIsLoading(false);
+        }
       }
-    };
+    },
+    [],
+  );
 
+  useEffect(() => {
     loadBookings();
-  }, []);
+  }, [loadBookings]);
+
+  useRealtimeRefresh({
+    events: BOOKING_HISTORY_EVENTS,
+    onRefresh: () =>
+      loadBookings({ showLoading: false, showErrors: false }),
+  });
 
   const filteredBookings = useMemo(
     () =>

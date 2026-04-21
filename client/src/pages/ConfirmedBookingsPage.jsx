@@ -1,10 +1,12 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarDays, Hash, Search } from "lucide-react";
 import toast from "react-hot-toast";
 
 import AdminNavbar from "../components/AdminNavbar";
+import { useRealtimeRefresh } from "../hooks/useRealtimeRefresh";
 import axiosInstance from "../lib/axios";
 import { getErrorMessage } from "../lib/errors";
+import { REALTIME_EVENTS } from "../lib/realtimeEvents";
 
 const STATUS_STYLES = {
   CANCELLED: "bg-red-500/10 text-red-400",
@@ -18,29 +20,49 @@ const formatDateTime = (value) =>
 const formatCurrency = (value) =>
   `Rs. ${Number(value ?? 0).toLocaleString("en-IN")}`;
 
+const CONFIRMED_BOOKINGS_EVENTS = [
+  REALTIME_EVENTS.BOOKING_CHANGED,
+  REALTIME_EVENTS.SESSION_RESET,
+];
+
 function ConfirmedBookingsPage() {
   const [bookings, setBookings] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const loadBookings = async () => {
-      setIsLoading(true);
+  const loadBookings = useCallback(
+    async ({ showLoading = true, showErrors = true } = {}) => {
+      if (showLoading) {
+        setIsLoading(true);
+      }
 
       try {
         const response = await axiosInstance.get("/admin/bookings");
 
         setBookings(response.data?.data?.bookings || []);
       } catch (error) {
-        toast.error(getErrorMessage(error, "Unable to load booking registry"));
+        if (showErrors) {
+          toast.error(getErrorMessage(error, "Unable to load booking registry"));
+        }
       } finally {
-        setIsLoading(false);
+        if (showLoading) {
+          setIsLoading(false);
+        }
       }
-    };
+    },
+    [],
+  );
 
+  useEffect(() => {
     loadBookings();
-  }, []);
+  }, [loadBookings]);
+
+  useRealtimeRefresh({
+    events: CONFIRMED_BOOKINGS_EVENTS,
+    onRefresh: () =>
+      loadBookings({ showLoading: false, showErrors: false }),
+  });
 
   const filteredBookings = useMemo(
     () =>
