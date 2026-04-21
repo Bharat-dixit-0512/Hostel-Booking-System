@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Bed,
   Building2,
@@ -16,8 +16,10 @@ import AnimatedBorder from "../components/AnimatedBorder";
 import StudentNavbar from "../components/StudentNavbar";
 import ThemePreferenceCard from "../components/ThemePreferenceCard";
 import { useAuth } from "../hooks/useAuth";
+import { useRealtimeRefresh } from "../hooks/useRealtimeRefresh";
 import axiosInstance from "../lib/axios";
 import { getErrorMessage } from "../lib/errors";
+import { REALTIME_EVENTS } from "../lib/realtimeEvents";
 
 const InfoTile = ({ icon, label, value, color = "text-white" }) => (
   <div className="p-4 rounded-2xl bg-[#0b1118]/40 border border-white/5 flex items-center gap-4 hover:border-[#137fec]/40 hover:bg-[#0b1118]/60 transition-all group cursor-default">
@@ -40,12 +42,22 @@ const ActionBtn = ({ label, onClick }) => (
     className="w-full flex items-center justify-between px-5 py-4 rounded-xl bg-white/5 border border-white/5 hover:bg-[#137fec]/10 hover:border-[#137fec]/20 text-xs font-bold text-slate-400 hover:text-white transition-all group cursor-pointer"
   >
     <span>{label}</span>
-    <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-all text-[#137fec]" />
+    <ChevronRight
+      size={14}
+      className="opacity-0 group-hover:opacity-100 transition-all text-[#137fec]"
+    />
   </button>
 );
 
 const getHostelName = (hostels, hostelId) =>
-  hostels.find((hostel) => hostel.hostel_id === hostelId)?.hostel_name || `Hostel #${hostelId}`;
+  hostels.find((hostel) => hostel.hostel_id === hostelId)?.hostel_name ||
+  `Hostel #${hostelId}`;
+
+const STUDENT_PROFILE_EVENTS = [
+  REALTIME_EVENTS.BOOKING_CHANGED,
+  REALTIME_EVENTS.INVENTORY_CHANGED,
+  REALTIME_EVENTS.SESSION_RESET,
+];
 
 function StudentProfile() {
   const navigate = useNavigate();
@@ -54,49 +66,67 @@ function StudentProfile() {
   const [latestBooking, setLatestBooking] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(true);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadProfileExtras = async () => {
-      setIsRefreshing(true);
+  const loadProfileExtras = useCallback(
+    async ({
+      showRefreshing = true,
+      showErrors = true,
+      refreshAuthUser = true,
+    } = {}) => {
+      if (showRefreshing) {
+        setIsRefreshing(true);
+      }
 
       try {
+        const refreshAuthUserPromise = refreshAuthUser
+          ? refreshUser()
+          : Promise.resolve();
         const [bookingsResponse, hostelsResponse] = await Promise.all([
           axiosInstance.get("/bookings/me"),
           axiosInstance.get("/hostels"),
-          refreshUser(),
+          refreshAuthUserPromise,
         ]);
-
-        if (!isMounted) {
-          return;
-        }
 
         setLatestBooking(bookingsResponse.data?.data?.bookings?.[0] || null);
         setHostels(hostelsResponse.data?.data?.hostels || []);
       } catch (error) {
-        if (isMounted) {
+        if (showErrors) {
           toast.error(getErrorMessage(error, "Unable to load profile"));
         }
       } finally {
-        if (isMounted) {
+        if (showRefreshing) {
           setIsRefreshing(false);
         }
       }
-    };
+    },
+    [refreshUser],
+  );
 
+  useEffect(() => {
     if (user?.roll_number) {
       loadProfileExtras();
     }
+  }, [loadProfileExtras, user?.roll_number]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [refreshUser, user?.roll_number]);
+  useRealtimeRefresh({
+    enabled: Boolean(user?.roll_number),
+    events: STUDENT_PROFILE_EVENTS,
+    onRefresh: () =>
+      loadProfileExtras({
+        showRefreshing: false,
+        showErrors: false,
+        refreshAuthUser: false,
+      }),
+  });
 
   const hostelId = latestBooking?.hostel_id ?? user?.hostel_id ?? null;
-  const hostelName = hostelId ? getHostelName(hostels, hostelId) : "Not allocated";
-  const roomNumber = latestBooking?.room_number ?? user?.room_number ?? "Not allocated";
-  const bookingStatus = latestBooking?.status || (user?.room_allocated ? "CONFIRMED" : "NO BOOKING");
+  const hostelName = hostelId
+    ? getHostelName(hostels, hostelId)
+    : "Not allocated";
+  const roomNumber =
+    latestBooking?.room_number ?? user?.room_number ?? "Not allocated";
+  const bookingStatus =
+    latestBooking?.status ||
+    (user?.room_allocated ? "CONFIRMED" : "NO BOOKING");
   const avatarSeed = encodeURIComponent(user?.name || "student");
 
   return (
@@ -130,7 +160,11 @@ function StudentProfile() {
                     </h2>
                     <div className="flex items-center gap-2 text-[#137fec] font-bold text-xs uppercase tracking-[0.2em]">
                       <ShieldCheck className="w-4 h-4" />
-                      <span>{isRefreshing ? "Refreshing profile" : "Authenticated Student Profile"}</span>
+                      <span>
+                        {isRefreshing
+                          ? "Refreshing profile"
+                          : "Authenticated Student Profile"}
+                      </span>
                     </div>
                   </div>
 
@@ -138,32 +172,52 @@ function StudentProfile() {
                     type="button"
                     onClick={() =>
                       navigate(
-                        latestBooking?._id ? `/student/payment?bookingId=${latestBooking._id}` : "/student/booking"
+                        latestBooking?._id
+                          ? `/student/payment?bookingId=${latestBooking._id}`
+                          : "/student/booking",
                       )
                     }
                     className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-xs font-bold hover:bg-white/10 transition-all cursor-pointer active:scale-95 flex items-center gap-2"
                   >
                     <DoorOpen size={14} />
-                    {latestBooking?.status === "PENDING" ? "Open Payment" : "Open Booking"}
+                    {latestBooking?.status === "PENDING"
+                      ? "Open Payment"
+                      : "Open Booking"}
                   </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoTile icon={<User />} label="Full Name" value={user?.name} />
+                  <InfoTile
+                    icon={<User />}
+                    label="Full Name"
+                    value={user?.name}
+                  />
                   <InfoTile
                     icon={<Hash />}
                     label="Roll Number"
                     value={String(user?.roll_number || "")}
                     color="text-[#137fec]"
                   />
-                  <InfoTile icon={<Mail />} label="Email ID" value={user?.email} />
-                  <InfoTile icon={<Building2 />} label="Hostel" value={hostelName} />
+                  <InfoTile
+                    icon={<Mail />}
+                    label="Email ID"
+                    value={user?.email}
+                  />
+                  <InfoTile
+                    icon={<Building2 />}
+                    label="Hostel"
+                    value={hostelName}
+                  />
                   <InfoTile icon={<Bed />} label="Room" value={roomNumber} />
                   <InfoTile
                     icon={<ShieldCheck />}
                     label="Booking Status"
                     value={bookingStatus}
-                    color={bookingStatus === "CONFIRMED" ? "text-emerald-400" : "text-orange-400"}
+                    color={
+                      bookingStatus === "CONFIRMED"
+                        ? "text-emerald-400"
+                        : "text-orange-400"
+                    }
                   />
                 </div>
               </div>
@@ -178,23 +232,37 @@ function StudentProfile() {
                     <User size={20} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-white leading-none">Quick Actions</h3>
+                    <h3 className="text-lg font-bold text-white leading-none">
+                      Quick Actions
+                    </h3>
                     <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-2">
                       Live Backend
                     </p>
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <ActionBtn label="Browse Eligible Hostels" onClick={() => navigate("/student/booking")} />
                   <ActionBtn
-                    label={latestBooking?.status === "PENDING" ? "Complete Pending Payment" : "Open Payment Center"}
+                    label="Browse Eligible Hostels"
+                    onClick={() => navigate("/student/booking")}
+                  />
+                  <ActionBtn
+                    label={
+                      latestBooking?.status === "PENDING"
+                        ? "Complete Pending Payment"
+                        : "Open Payment Center"
+                    }
                     onClick={() =>
                       navigate(
-                        latestBooking?._id ? `/student/payment?bookingId=${latestBooking._id}` : "/student/payment"
+                        latestBooking?._id
+                          ? `/student/payment?bookingId=${latestBooking._id}`
+                          : "/student/payment",
                       )
                     }
                   />
-                  <ActionBtn label="Refresh Profile Data" onClick={() => window.location.reload()} />
+                  <ActionBtn
+                    label="Refresh Profile Data"
+                    onClick={() => window.location.reload()}
+                  />
                 </div>
               </div>
             </AnimatedBorder>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   CheckCircle2,
   CreditCard,
@@ -12,8 +12,10 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import StudentNavbar from "../components/StudentNavbar";
 import { useAuth } from "../hooks/useAuth";
+import { useRealtimeRefresh } from "../hooks/useRealtimeRefresh";
 import axiosInstance from "../lib/axios";
 import { getErrorMessage } from "../lib/errors";
+import { REALTIME_EVENTS } from "../lib/realtimeEvents";
 
 const getHostelName = (hostels, hostelId) =>
   hostels.find((hostel) => hostel.hostel_id === hostelId)?.hostel_name ||
@@ -21,11 +23,18 @@ const getHostelName = (hostels, hostelId) =>
 const formatCurrency = (value) =>
   `Rs. ${Number(value ?? 0).toLocaleString("en-IN")}`;
 
+const PAYMENT_PAGE_EVENTS = [
+  REALTIME_EVENTS.BOOKING_CHANGED,
+  REALTIME_EVENTS.BOOKING_WINDOW_UPDATED,
+  REALTIME_EVENTS.SESSION_RESET,
+];
+
 function PaymentPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { refreshUser } = useAuth();
+  const requestedBookingId = searchParams.get("bookingId");
   const [booking, setBooking] = useState(location.state?.booking || null);
   const [hostels, setHostels] = useState([]);
   const [sessionData, setSessionData] = useState(null);
@@ -33,14 +42,13 @@ function PaymentPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadPaymentState = async () => {
-      setIsLoading(true);
+  const loadPaymentState = useCallback(
+    async ({ showLoading = true, showErrors = true } = {}) => {
+      if (showLoading) {
+        setIsLoading(true);
+      }
 
       try {
-        const requestedBookingId = searchParams.get("bookingId");
         const [bookingsResponse, hostelsResponse] = await Promise.all([
           axiosInstance.get("/bookings/me"),
           axiosInstance.get("/hostels"),
@@ -52,10 +60,6 @@ function PaymentPage() {
           allBookings.find((item) => item.status === "CONFIRMED") ||
           null;
 
-        if (!isMounted) {
-          return;
-        }
-
         setBooking(resolvedBooking);
         setHostels(hostelsResponse.data?.data?.hostels || []);
 
@@ -66,32 +70,32 @@ function PaymentPage() {
               booking_id: resolvedBooking._id,
             },
           );
-
-          if (!isMounted) {
-            return;
-          }
-
           setSessionData(sessionResponse.data?.data || null);
         } else {
           setSessionData(null);
         }
       } catch (error) {
-        if (isMounted) {
+        if (showErrors) {
           toast.error(getErrorMessage(error, "Unable to load payment status"));
         }
       } finally {
-        if (isMounted) {
+        if (showLoading) {
           setIsLoading(false);
         }
       }
-    };
+    },
+    [requestedBookingId],
+  );
 
+  useEffect(() => {
     loadPaymentState();
+  }, [loadPaymentState, location.key]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [location.state?.booking, searchParams]);
+  useRealtimeRefresh({
+    events: PAYMENT_PAGE_EVENTS,
+    onRefresh: () =>
+      loadPaymentState({ showLoading: false, showErrors: false }),
+  });
 
   const handleConfirmPayment = async () => {
     if (!booking?._id) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   BedDouble,
   CalendarClock,
@@ -16,9 +16,11 @@ import AnimatedBorder from "../components/AnimatedBorder";
 import BookingWindowToggle from "../components/BookingWindowToggle";
 import ResetSystemAction from "../components/ResetSystemAction";
 import { useAuth } from "../hooks/useAuth";
+import { useRealtimeRefresh } from "../hooks/useRealtimeRefresh";
 import { useClickMouse } from "../hooks/ClickMouse";
 import axiosInstance from "../lib/axios";
 import { getErrorMessage } from "../lib/errors";
+import { REALTIME_EVENTS } from "../lib/realtimeEvents";
 import AnimatedLogout from "../components/AnimatedLogout";
 
 const StatMini = ({ label, value, tone = "text-emerald-500" }) => (
@@ -45,7 +47,7 @@ const ActionCard = ({
     <div
       className={`p-4 rounded-2xl bg-white/5 w-fit mb-8 group-hover:scale-110 transition-transform ${colorClass}`}
     >
-      <Icon size={24} />
+      {React.createElement(Icon, { size: 24 })}
     </div>
     <h3 className="text-xl font-bold text-white mb-2 tracking-tight">
       {title}
@@ -58,6 +60,13 @@ const ActionCard = ({
 
 const countByStatus = (bookings, status) =>
   bookings.filter((booking) => booking.status === status).length;
+
+const ADMIN_DASHBOARD_EVENTS = [
+  REALTIME_EVENTS.BOOKING_CHANGED,
+  REALTIME_EVENTS.INVENTORY_CHANGED,
+  REALTIME_EVENTS.BOOKING_WINDOW_UPDATED,
+  REALTIME_EVENTS.SESSION_RESET,
+];
 
 function AdminDashboardPage() {
   const navigate = useNavigate();
@@ -72,43 +81,59 @@ function AdminDashboardPage() {
 
   const isMainAdmin = user?.role === "mainadmin";
 
-  const loadDashboard = async () => {
-    setIsLoading(true);
+  const loadDashboard = useCallback(
+    async ({ showLoading = true, showErrors = true } = {}) => {
+      if (showLoading) {
+        setIsLoading(true);
+      }
 
-    try {
-      const [
-        hostelsResponse,
-        bookingsResponse,
-        bookingWindowResponse,
-        eligibleStudentsResponse,
-      ] = await Promise.all([
-        axiosInstance.get("/admin/hostels"),
-        axiosInstance.get("/admin/bookings"),
-        axiosInstance.get("/admin/booking-window"),
-        axiosInstance.get("/admin/eligible-students"),
-      ]);
+      try {
+        const [
+          hostelsResponse,
+          bookingsResponse,
+          bookingWindowResponse,
+          eligibleStudentsResponse,
+        ] = await Promise.all([
+          axiosInstance.get("/admin/hostels"),
+          axiosInstance.get("/admin/bookings"),
+          axiosInstance.get("/admin/booking-window"),
+          axiosInstance.get("/admin/eligible-students"),
+        ]);
 
-      setHostels(hostelsResponse.data?.data?.hostels || []);
-      setBookings(bookingsResponse.data?.data?.bookings || []);
-      setBookingWindowOpen(
-        Boolean(bookingWindowResponse.data?.data?.booking_window_open),
-      );
-      setEligibleStudentsCount(
-        Number(eligibleStudentsResponse.data?.data?.count) ||
-          (eligibleStudentsResponse.data?.data?.students || []).length,
-      );
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Unable to load admin dashboard"));
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        setHostels(hostelsResponse.data?.data?.hostels || []);
+        setBookings(bookingsResponse.data?.data?.bookings || []);
+        setBookingWindowOpen(
+          Boolean(bookingWindowResponse.data?.data?.booking_window_open),
+        );
+        setEligibleStudentsCount(
+          Number(eligibleStudentsResponse.data?.data?.count) ||
+            (eligibleStudentsResponse.data?.data?.students || []).length,
+        );
+      } catch (error) {
+        if (showErrors) {
+          toast.error(getErrorMessage(error, "Unable to load admin dashboard"));
+        }
+      } finally {
+        if (showLoading) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (user?.employee_id) {
       loadDashboard();
     }
-  }, [user?.employee_id]);
+  }, [loadDashboard, user?.employee_id]);
+
+  useRealtimeRefresh({
+    enabled: Boolean(user?.employee_id),
+    events: ADMIN_DASHBOARD_EVENTS,
+    onRefresh: () =>
+      loadDashboard({ showLoading: false, showErrors: false }),
+  });
 
   const navigateTo = (path) => {
     playClickSound();
@@ -275,10 +300,12 @@ function AdminDashboardPage() {
           </div>
           <div className="lg:col-span-4">
             <AnimatedLogout>
-            <ResetSystemAction
-              disabled={!isMainAdmin}
-              onSuccess={loadDashboard}
-            />
+              <ResetSystemAction
+                disabled={!isMainAdmin}
+                onSuccess={() =>
+                  loadDashboard({ showLoading: false, showErrors: true })
+                }
+              />
             </AnimatedLogout>
           </div>
         </div>

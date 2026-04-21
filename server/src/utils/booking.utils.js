@@ -17,6 +17,8 @@ import {
   getRoomModel,
   startHostelSession,
 } from "../db/index.js";
+import { REALTIME_EVENTS } from "../socket/events.js";
+import { emitRealtimeEvent } from "../socket/index.js";
 import ApiError from "./ApiError.js";
 import {
   getHostelPricingValueMap,
@@ -126,6 +128,13 @@ export const releaseExpiredPendingBookings = async (session = null) => {
     );
 
     releasedCount += 1;
+  }
+
+  if (!session && releasedCount > 0) {
+    emitRealtimeEvent(REALTIME_EVENTS.BOOKING_CHANGED, {
+      action: "expired_cleanup",
+      released_count: releasedCount,
+    });
   }
 
   return releasedCount;

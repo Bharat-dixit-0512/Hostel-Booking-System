@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
   ChevronDown,
@@ -19,10 +19,17 @@ import { useNavigate } from "react-router-dom";
 
 import AdminNavbar from "../components/AdminNavbar";
 import { useAuth } from "../hooks/useAuth";
+import { useRealtimeRefresh } from "../hooks/useRealtimeRefresh";
 import axiosInstance from "../lib/axios";
 import { getErrorMessage } from "../lib/errors";
+import { REALTIME_EVENTS } from "../lib/realtimeEvents";
 
 const STUDENT_YEARS = ["1st", "2nd", "3rd", "4th"];
+const INVENTORY_SYNC_EVENTS = [
+  REALTIME_EVENTS.BOOKING_CHANGED,
+  REALTIME_EVENTS.INVENTORY_CHANGED,
+  REALTIME_EVENTS.SESSION_RESET,
+];
 const PRICING_CATEGORIES = [
   { capacity: 1, ac_type: true, label: "1 Bed AC" },
   { capacity: 1, ac_type: false, label: "1 Bed Non-AC" },
@@ -67,7 +74,11 @@ const isPricingCategoryChanged = (
   category,
 ) =>
   getPricingCategoryPrice(pricingRows, category.capacity, category.ac_type) !==
-  getPricingCategoryPrice(savedPricingRows, category.capacity, category.ac_type);
+  getPricingCategoryPrice(
+    savedPricingRows,
+    category.capacity,
+    category.ac_type,
+  );
 
 const getPricingChangeCount = (pricingRows = [], savedPricingRows = []) =>
   PRICING_CATEGORIES.filter((category) =>
@@ -117,7 +128,7 @@ const confirmInventoryAction = ({
             <div
               className={`rounded-2xl p-3 ${variantStyles.iconWrapper} ${variantStyles.iconColor}`}
             >
-              <Icon size={22} />
+              {React.createElement(Icon, { size: 22 })}
             </div>
 
             <div className="min-w-0 flex-1 space-y-3">
@@ -245,48 +256,64 @@ function InventoryConfigPage() {
 
   const canManage = user?.role === "mainadmin";
 
-  const loadInventory = async () => {
-    setIsLoading(true);
+  const loadInventory = useCallback(
+    async ({ showLoading = true, showErrors = true } = {}) => {
+      if (showLoading) {
+        setIsLoading(true);
+      }
 
-    try {
-      const hostelsResponse = await axiosInstance.get("/admin/hostels");
-      const fetchedHostels = hostelsResponse.data?.data?.hostels || [];
-      const roomsResponses = await Promise.all(
-        fetchedHostels.map((hostel) =>
-          axiosInstance
-            .get(`/admin/hostels/${hostel.hostel_id}/rooms`)
-            .then((response) => ({
-              hostel_id: hostel.hostel_id,
-              rooms: response.data?.data?.rooms || [],
-            })),
-        ),
-      );
-      const roomsByHostelId = new Map(
-        roomsResponses.map((entry) => [entry.hostel_id, entry.rooms]),
-      );
+      try {
+        const hostelsResponse = await axiosInstance.get("/admin/hostels");
+        const fetchedHostels = hostelsResponse.data?.data?.hostels || [];
+        const roomsResponses = await Promise.all(
+          fetchedHostels.map((hostel) =>
+            axiosInstance
+              .get(`/admin/hostels/${hostel.hostel_id}/rooms`)
+              .then((response) => ({
+                hostel_id: hostel.hostel_id,
+                rooms: response.data?.data?.rooms || [],
+              })),
+          ),
+        );
+        const roomsByHostelId = new Map(
+          roomsResponses.map((entry) => [entry.hostel_id, entry.rooms]),
+        );
 
-      setHostels(
-        fetchedHostels.map((hostel) => {
-          const normalizedPricing = clonePricingRows(hostel.pricing || []);
+        setHostels(
+          fetchedHostels.map((hostel) => {
+            const normalizedPricing = clonePricingRows(hostel.pricing || []);
 
-          return {
-            ...hostel,
-            rooms: roomsByHostelId.get(hostel.hostel_id) || [],
-            pricing: normalizedPricing,
-            savedPricing: clonePricingRows(normalizedPricing),
-          };
-        }),
-      );
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Unable to load inventory"));
-    } finally {
-      setIsLoading(false);
-    }
-  };
+            return {
+              ...hostel,
+              rooms: roomsByHostelId.get(hostel.hostel_id) || [],
+              pricing: normalizedPricing,
+              savedPricing: clonePricingRows(normalizedPricing),
+            };
+          }),
+        );
+      } catch (error) {
+        if (showErrors) {
+          toast.error(getErrorMessage(error, "Unable to load inventory"));
+        }
+      } finally {
+        if (showLoading) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     loadInventory();
-  }, []);
+  }, [loadInventory]);
+
+  useRealtimeRefresh({
+    enabled: !isModalOpen && !isSaving,
+    events: INVENTORY_SYNC_EVENTS,
+    onRefresh: () =>
+      loadInventory({ showLoading: false, showErrors: false }),
+  });
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -374,7 +401,7 @@ function InventoryConfigPage() {
       });
       toast.success("Hostel created successfully", { id: toastId });
       closeModal();
-      await loadInventory();
+      await loadInventory({ showLoading: false, showErrors: true });
     } catch (error) {
       toast.error(getErrorMessage(error, "Unable to create hostel"), {
         id: toastId,
@@ -424,7 +451,7 @@ function InventoryConfigPage() {
       );
       toast.success(`Room ${formData.room_number} added`, { id: toastId });
       closeModal();
-      await loadInventory();
+      await loadInventory({ showLoading: false, showErrors: true });
     } catch (error) {
       toast.error(getErrorMessage(error, "Unable to create room"), {
         id: toastId,
@@ -476,7 +503,7 @@ function InventoryConfigPage() {
       ]);
       toast.success(`${formData.hostel_name.trim()} updated`, { id: toastId });
       closeModal();
-      await loadInventory();
+      await loadInventory({ showLoading: false, showErrors: true });
     } catch (error) {
       toast.error(getErrorMessage(error, "Unable to update hostel"), {
         id: toastId,
@@ -520,7 +547,7 @@ function InventoryConfigPage() {
       );
       toast.success(`Room ${activeRoom.room_number} updated`, { id: toastId });
       closeModal();
-      await loadInventory();
+      await loadInventory({ showLoading: false, showErrors: true });
     } catch (error) {
       toast.error(getErrorMessage(error, "Unable to update room"), {
         id: toastId,
@@ -550,7 +577,7 @@ function InventoryConfigPage() {
     try {
       await axiosInstance.delete(`/admin/hostels/${hostel.hostel_id}`);
       toast.success(`${hostel.hostel_name} deleted`, { id: toastId });
-      await loadInventory();
+      await loadInventory({ showLoading: false, showErrors: true });
     } catch (error) {
       toast.error(getErrorMessage(error, "Unable to delete hostel"), {
         id: toastId,
@@ -580,7 +607,7 @@ function InventoryConfigPage() {
         `/admin/hostels/${hostel.hostel_id}/rooms/${encodeURIComponent(room.room_number)}`,
       );
       toast.success(`Room ${room.room_number} deleted`, { id: toastId });
-      await loadInventory();
+      await loadInventory({ showLoading: false, showErrors: true });
     } catch (error) {
       toast.error(getErrorMessage(error, "Unable to delete room"), {
         id: toastId,

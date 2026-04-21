@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ArrowRight,
   BedDouble,
@@ -13,12 +13,20 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
 import StudentNavbar from "../components/StudentNavbar";
+import { useRealtimeRefresh } from "../hooks/useRealtimeRefresh";
 import axiosInstance from "../lib/axios";
 import { getErrorMessage } from "../lib/errors";
+import { REALTIME_EVENTS } from "../lib/realtimeEvents";
 
 const ACTIVE_BOOKING_STATUSES = new Set(["PENDING", "CONFIRMED"]);
 const formatCurrency = (value) =>
   `Rs. ${Number(value ?? 0).toLocaleString("en-IN")}`;
+const BROWSE_HOSTELS_EVENTS = [
+  REALTIME_EVENTS.BOOKING_CHANGED,
+  REALTIME_EVENTS.INVENTORY_CHANGED,
+  REALTIME_EVENTS.BOOKING_WINDOW_UPDATED,
+  REALTIME_EVENTS.SESSION_RESET,
+];
 
 const HostelSummaryCard = ({ hostel, onSelect }) => (
   <button
@@ -150,44 +158,77 @@ function BrowseHostelsPage() {
   const [bookingWindowOpen, setBookingWindowOpen] = useState(false);
   const [bookings, setBookings] = useState([]);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadInitialData = async () => {
-      setIsLoadingHostels(true);
+  const loadInitialData = useCallback(
+    async ({
+      selectedHostelId = null,
+      showLoading = true,
+      showErrors = true,
+    } = {}) => {
+      if (showLoading) {
+        setIsLoadingHostels(true);
+      }
 
       try {
         const [hostelsResponse, bookingsResponse] = await Promise.all([
           axiosInstance.get("/hostels"),
           axiosInstance.get("/bookings/me"),
         ]);
+        const fetchedHostels = hostelsResponse.data?.data?.hostels || [];
+        const resolvedSelectedHostelId = Number(selectedHostelId);
 
-        if (!isMounted) {
-          return;
-        }
-
-        setHostels(hostelsResponse.data?.data?.hostels || []);
+        setHostels(fetchedHostels);
         setBookingWindowOpen(
           Boolean(hostelsResponse.data?.data?.booking_window_open),
         );
         setBookings(bookingsResponse.data?.data?.bookings || []);
+
+        if (
+          Number.isInteger(resolvedSelectedHostelId) &&
+          resolvedSelectedHostelId > 0
+        ) {
+          const refreshedSelectedHostel =
+            fetchedHostels.find(
+              (hostel) => Number(hostel.hostel_id) === resolvedSelectedHostelId,
+            ) || null;
+
+          setSelectedHostel(refreshedSelectedHostel);
+
+          if (!refreshedSelectedHostel) {
+            setRooms([]);
+            setSelectedRoom(null);
+            return;
+          }
+
+          const roomsResponse = await axiosInstance.get(
+            `/hostels/${resolvedSelectedHostelId}/rooms`,
+          );
+          const refreshedRooms = roomsResponse.data?.data?.rooms || [];
+
+          setRooms(refreshedRooms);
+          setSelectedRoom((currentValue) =>
+            currentValue
+              ? refreshedRooms.find(
+                  (room) => room.room_number === currentValue.room_number,
+                ) || null
+              : null,
+          );
+        }
       } catch (error) {
-        if (isMounted) {
+        if (showErrors) {
           toast.error(getErrorMessage(error, "Unable to load hostels"));
         }
       } finally {
-        if (isMounted) {
+        if (showLoading) {
           setIsLoadingHostels(false);
         }
       }
-    };
+    },
+    [],
+  );
 
+  useEffect(() => {
     loadInitialData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  }, [loadInitialData]);
 
   const pendingBooking =
     bookings.find((booking) => booking.status === "PENDING") || null;
@@ -196,6 +237,19 @@ function BrowseHostelsPage() {
   const activeBooking =
     bookings.find((booking) => ACTIVE_BOOKING_STATUSES.has(booking.status)) ||
     null;
+
+  const refreshRealtimeData = useCallback(() => {
+    loadInitialData({
+      selectedHostelId: selectedHostel?.hostel_id ?? null,
+      showLoading: false,
+      showErrors: false,
+    });
+  }, [loadInitialData, selectedHostel?.hostel_id]);
+
+  useRealtimeRefresh({
+    events: BROWSE_HOSTELS_EVENTS,
+    onRefresh: refreshRealtimeData,
+  });
 
   const handleHostelSelect = async (hostel) => {
     setSelectedHostel(hostel);

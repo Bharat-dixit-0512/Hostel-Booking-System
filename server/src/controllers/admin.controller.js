@@ -19,6 +19,8 @@ import {
   getRoomModel,
   startHostelSession,
 } from "../db/index.js";
+import { REALTIME_EVENTS } from "../socket/events.js";
+import { emitRealtimeEvent } from "../socket/index.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
@@ -486,6 +488,11 @@ export const createHostel = asyncHandler(async (req, res) => {
     }
   }
 
+  emitRealtimeEvent(REALTIME_EVENTS.INVENTORY_CHANGED, {
+    action: "hostel_created",
+    hostel_id: hostel.hostel_id,
+  });
+
   res.status(201).json(
     new ApiResponse(
       201,
@@ -573,6 +580,11 @@ export const updateHostel = asyncHandler(async (req, res) => {
 
   await hostel.save();
 
+  emitRealtimeEvent(REALTIME_EVENTS.INVENTORY_CHANGED, {
+    action: "hostel_updated",
+    hostel_id: hostelId,
+  });
+
   res.status(200).json(
     new ApiResponse(
       200,
@@ -622,6 +634,11 @@ export const deleteHostel = asyncHandler(async (req, res) => {
 
     await hostel.deleteOne({ session });
     await session.commitTransaction();
+
+    emitRealtimeEvent(REALTIME_EVENTS.INVENTORY_CHANGED, {
+      action: "hostel_deleted",
+      hostel_id: hostelId,
+    });
 
     res.status(200).json(
       new ApiResponse(
@@ -707,6 +724,11 @@ export const replaceAllowedYears = asyncHandler(async (req, res) => {
     })),
   );
 
+  emitRealtimeEvent(REALTIME_EVENTS.INVENTORY_CHANGED, {
+    action: "hostel_allowed_years_updated",
+    hostel_id: hostelId,
+  });
+
   res.status(200).json(
     new ApiResponse(
       200,
@@ -765,6 +787,11 @@ export const updateHostelPricing = asyncHandler(async (req, res) => {
 
   const pricing = await getNormalizedHostelPricing(hostelId);
 
+  emitRealtimeEvent(REALTIME_EVENTS.INVENTORY_CHANGED, {
+    action: "hostel_pricing_updated",
+    hostel_id: hostelId,
+  });
+
   res.status(200).json(
     new ApiResponse(
       200,
@@ -812,6 +839,10 @@ export const updateBookingWindow = asyncHandler(async (req, res) => {
       new: true,
     },
   );
+
+  emitRealtimeEvent(REALTIME_EVENTS.BOOKING_WINDOW_UPDATED, {
+    booking_window_open: bookingWindow.is_open,
+  });
 
   res.status(200).json(
     new ApiResponse(
@@ -871,6 +902,10 @@ export const resetSessionData = asyncHandler(async (req, res) => {
     await session.endSession();
   }
 
+  emitRealtimeEvent(REALTIME_EVENTS.SESSION_RESET, {
+    action: "session_reset",
+  });
+
   res
     .status(200)
     .json(new ApiResponse(200, null, "Hostel session data reset successfully"));
@@ -906,6 +941,13 @@ export const createOfflineBookingController = asyncHandler(async (req, res) => {
     hostelId: Number(hostel_id),
     roomNumber: String(room_number).trim(),
     adminEmployeeId: req.user.employee_id,
+  });
+
+  emitRealtimeEvent(REALTIME_EVENTS.BOOKING_CHANGED, {
+    action: "offline_created",
+    hostel_id: booking.hostel_id,
+    room_number: booking.room_number,
+    status: booking.status,
   });
 
   res.status(201).json(

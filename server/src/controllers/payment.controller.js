@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 
 import { BOOKING_STATUSES } from "../constants.js";
 import { getBookingModel } from "../db/index.js";
+import { REALTIME_EVENTS } from "../socket/events.js";
+import { emitRealtimeEvent } from "../socket/index.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
@@ -64,6 +66,13 @@ export const confirmPayment = asyncHandler(async (req, res) => {
     bookingId: booking_id,
     rollNumber: req.user.roll_number,
     paymentReference: payment_reference,
+  });
+
+  emitRealtimeEvent(REALTIME_EVENTS.BOOKING_CHANGED, {
+    action: "confirmed",
+    hostel_id: booking.hostel_id,
+    room_number: booking.room_number,
+    status: booking.status,
   });
 
   return res.status(200).json(

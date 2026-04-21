@@ -1,8 +1,7 @@
-import { createContext, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
+import { AuthContext } from "./AuthContextStore";
 import axiosInstance from "../lib/axios";
-
-export const AuthContext = createContext(null);
 
 const normalizeStudentUser = (user) => ({
   ...user,
@@ -68,14 +67,14 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     const response = await axiosInstance.get("/auth/me");
     const normalizedUser = normalizeUser(response.data?.data?.user);
 
     setUser(normalizedUser);
 
     return normalizedUser;
-  };
+  }, []);
 
   const login = async ({ email, password, loginType }) => {
     setIsAuthActionPending(true);
